@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: jee-neet-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: mocktest-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+
+
+databases:
+  - name: mocktest-db
+    plan: free
+    databaseName: mocktestplatform
+    ipAllowList: []

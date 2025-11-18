@@ -1,0 +1,19 @@
+/* Gujarati Font - EKLG-13-BoldItalic */
+@font-face {
+    font-family: 'EKLG-13-BoldItalic';
+    src: url('EKLG-13-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+}
+
+/* Apply Gujarati font to elements with gujarati class */
+.gujarati-text,
+.lang-gu,
+[lang="gu"] {
+    font-family: 'EKLG-13-BoldItalic', 'Noto Sans Gujarati', sans-serif !important;
+}
+
+/* Fallback for Gujarati script */
+:lang(gu) {
+    font-family: 'EKLG-13-BoldItalic', 'Noto Sans Gujarati', sans-serif;
+}
