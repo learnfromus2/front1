@@ -26,5 +26,11 @@
   },
   "engines": {
     "node": ">=14.0.0"
-  }
+  },
+  "devDependencies": {
+    "electron": "^39.2.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

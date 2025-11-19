@@ -522,18 +522,19 @@
             } catch (error) {
                 console.error('❌ Error rendering MathJax:', error);
                 
-                // If it's a DOM mutation error, try rendering the whole document instead
+                // If it's a DOM mutation error, clear MathJax state and skip this batch
                 if (error.name === 'IndexSizeError' || error.message.includes('splitText')) {
-                    console.log('🔄 Retrying with full document render...');
-                    try {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        if (window.MathJax && window.MathJax.typesetPromise) {
-                            await window.MathJax.typesetPromise();
-                            console.log('✅ Full document render successful');
+                    console.warn('⚠️ DOM mutation detected during MathJax render - skipping this batch');
+                    // Clear MathJax's internal state
+                    if (window.MathJax && window.MathJax.typesetClear) {
+                        try {
+                            window.MathJax.typesetClear();
+                        } catch (e) {
+                            // Ignore clear errors
                         }
-                    } catch (retryError) {
-                        console.error('❌ Retry failed:', retryError);
                     }
+                    // Don't retry immediately - let the DOM stabilize naturally
+                    // The observer will catch any new content that needs rendering
                 }
             } finally {
                 isProcessingQueue = false;
@@ -1180,8 +1181,8 @@
     <style>
         /* Gujarati Font Support */
         @font-face {
-            font-family: 'EKLG-13-BoldItalic';
-            src: url('fonts/EKLG-13-BoldItalic.ttf') format('truetype');
+            font-family: 'EKLG13K_';
+            src: url('EKLG13K_.ttf') format('truetype');
             font-weight: bold;
             font-style: italic;
         }
@@ -1190,11 +1191,13 @@
         .gujarati-text,
         .lang-gu,
         [lang="gu"] {
-            font-family: 'EKLG-13-BoldItalic', 'Noto Sans Gujarati', sans-serif !important;
+            font-family: 'Noto Sans Gujarati', 'Shruti', 'Lohit Gujarati', sans-serif !important;
+            font-weight: 500;
         }
 
         :lang(gu) {
-            font-family: 'EKLG-13-BoldItalic', 'Noto Sans Gujarati', sans-serif;
+            font-family: 'Noto Sans Gujarati', 'Shruti', 'Lohit Gujarati', sans-serif;
+            font-weight: 500;
         }
 
         /* Prevent MathJax from affecting normal text spacing */
@@ -2429,6 +2432,21 @@
         .btn-primary:active {
             transform: translateY(-1px);
             transition: transform 0.1s ease;
+        }
+
+        /* Filter Button Styles */
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .filter-btn.active {
+            background: var(--primary) !important;
+            color: white !important;
         }
 
         .btn:disabled {
@@ -20106,6 +20124,10 @@
                     <i class="fas fa-chart-line"></i>
                     Performance
                 </button>
+                <button class="nav-btn" data-section="allPerformanceSection" id="allPerformanceNavBtn" style="display: none;">
+                    <i class="fas fa-users"></i>
+                    View Performance
+                </button>
                 <button class="nav-btn" onclick="handleAdminButtonClick()" id="adminNavBtn">
                     <i class="fas fa-shield-alt"></i>
                     Admin Panel
@@ -20136,7 +20158,9 @@
                                     <p class="dashboard-subtitle">Welcome back, <span id="greetingName">Student</span>!
                                         Ready to continue your learning journey?</p>
                                 </div>
-
+                                <button onclick="openDownloadPage()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 10px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem;">
+                                    <i class="fas fa-download"></i> Download App
+                                </button>
                             </div>
 
                             <!-- Stats Overview -->
@@ -20189,10 +20213,44 @@
                                             <div class="stat-number" id="dashboardTotalMarks">0</div>
                                         </div>
                                     </div>
+
+                                    <div class="stat-card">
+                                        <div class="stat-header">
+                                            <span class="stat-label">PERFORMANCE TREND</span>
+                                        </div>
+                                        <div class="stat-content">
+                                            <div class="stat-icon-wrapper" id="dashboardTrendIconWrapper">
+                                                <i class="fas fa-chart-line" id="dashboardTrendIcon"></i>
+                                            </div>
+                                            <div class="stat-number" id="dashboardTrend" style="font-size: 1.2rem;">--</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-
+                            <!-- Performance Chart Section -->
+                            <div style="margin: 2rem 0;">
+                                <div style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                                        <div>
+                                            <h2 style="margin: 0; color: var(--gray-800); font-size: 1.5rem;">
+                                                <i class="fas fa-chart-line" style="color: var(--primary); margin-right: 0.5rem;"></i>
+                                                Performance Progress
+                                            </h2>
+                                            <p style="margin: 0.5rem 0 0 0; color: var(--gray-600); font-size: 0.9rem;">Track your test scores over time</p>
+                                        </div>
+                                        <button onclick="showSection('performanceSection')" style="background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                                            <i class="fas fa-chart-bar"></i> View Details
+                                        </button>
+                                    </div>
+                                    <div id="dashboardPerformanceChart" style="position: relative; height: 300px;">
+                                        <div style="text-align: center; padding: 3rem; color: var(--gray-400);">
+                                            <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                                            <p>Take tests to see your performance graph</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Main Action Cards -->
                             <div class="action-cards-grid">
@@ -22598,6 +22656,227 @@
         </div>
     </section>
 
+    <!-- All Students Performance Section -->
+    <section class="section" id="allPerformanceSection" style="display: none;">
+        <div class="section-header">
+            <h1 class="section-title"><i class="fas fa-users"></i> All Students Performance</h1>
+            <p class="section-subtitle">View and filter all students' test results</p>
+            <button class="section-close-btn" onclick="goBackToHome()" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="all-performance-dashboard" style="padding: 2rem;">
+            <!-- Date Filters -->
+            <div class="filter-section" style="background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h3 style="margin: 0 0 1rem 0; color: var(--gray-800);"><i class="fas fa-filter"></i> Filter Results</h3>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                    <!-- Quick Filters -->
+                    <button class="filter-btn active" onclick="filterByDays(0)" style="padding: 0.75rem 1.5rem; border: 2px solid var(--primary); background: var(--primary); color: white; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                        Today
+                    </button>
+                    <button class="filter-btn" onclick="filterByDays(2)" style="padding: 0.75rem 1.5rem; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                        Last 2 Days
+                    </button>
+                    <button class="filter-btn" onclick="filterByDays(15)" style="padding: 0.75rem 1.5rem; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                        Last 15 Days
+                    </button>
+                    <button class="filter-btn" onclick="filterByDays(null)" style="padding: 0.75rem 1.5rem; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                        All Time
+                    </button>
+                    
+                    <!-- Custom Date Range -->
+                    <div style="display: flex; gap: 0.5rem; align-items: center; margin-left: auto;">
+                        <label style="color: var(--gray-700); font-weight: 500;">From:</label>
+                        <input type="date" id="filterStartDate" style="padding: 0.5rem; border: 2px solid var(--gray-300); border-radius: 6px; font-size: 0.9rem;">
+                        <label style="color: var(--gray-700); font-weight: 500;">To:</label>
+                        <input type="date" id="filterEndDate" style="padding: 0.5rem; border: 2px solid var(--gray-300); border-radius: 6px; font-size: 0.9rem;">
+                        <button onclick="filterByCustomDate()" style="padding: 0.5rem 1rem; background: var(--success); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-search"></i> Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            <div class="results-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                    <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Total Students</div>
+                    <div id="totalStudents" style="font-size: 2.5rem; font-weight: 700;">0</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);">
+                    <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Total Tests</div>
+                    <div id="totalTests" style="font-size: 2.5rem; font-weight: 700;">0</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);">
+                    <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Average Score</div>
+                    <div id="avgScore" style="font-size: 2.5rem; font-weight: 700;">0%</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(67, 233, 123, 0.3);">
+                    <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.5rem;">Highest Score</div>
+                    <div id="highestScore" style="font-size: 2.5rem; font-weight: 700;">0%</div>
+                </div>
+            </div>
+
+            <!-- Students Performance Table -->
+            <div class="performance-table-container" style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow-x: auto;">
+                <h3 style="margin: 0 0 1.5rem 0; color: var(--gray-800);"><i class="fas fa-table"></i> Detailed Results</h3>
+                <div id="allPerformanceTable">
+                    <div style="text-align: center; padding: 3rem; color: var(--gray-400);">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>Loading performance data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download App Section -->
+    <section class="section active" id="downloadAppSection" style="display: none; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; overflow-y: scroll !important; overflow-x: hidden !important; background: white !important; margin: 0 !important; padding: 0 !important; z-index: 99999 !important;">
+        <!-- Header -->
+        <div style="position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <h1 style="margin: 0; font-size: clamp(1.2rem, 5vw, 2rem); color: #1f2937; flex: 1; min-width: 200px;">
+                <i class="fas fa-download" style="color: #667eea; margin-right: 0.5rem;"></i>
+                Download EduSphere App
+            </h1>
+            <button onclick="goBackToHome()" style="background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div style="background: #f9fafb; min-height: calc(100vh - 70px); padding: 1.5rem 1rem 4rem 1rem;">
+            <div style="max-width: 1200px; margin: 0 auto; width: 100%;">
+            <!-- Hero Section -->
+            <div style="text-align: center; margin-bottom: 2rem; padding: 2rem 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; color: white;">
+                <div style="font-size: clamp(50px, 15vw, 80px); margin-bottom: 1rem;">📱</div>
+                <h2 style="font-size: clamp(1.5rem, 6vw, 2.5rem); margin-bottom: 1rem; font-weight: 700; line-height: 1.2;">Download EduSphere</h2>
+                <p style="font-size: clamp(0.9rem, 3vw, 1.2rem); opacity: 0.95; max-width: 600px; margin: 0 auto; padding: 0 1rem;">Experience seamless learning on any device. Available for Android and Windows PC.</p>
+            </div>
+
+            <!-- Download Options -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <!-- Android App -->
+                <div style="background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 2px solid #f0f0f0;">
+                    <div style="text-align: center;">
+                        <div style="font-size: clamp(50px, 12vw, 80px); margin-bottom: 1rem;">📱</div>
+                        <h3 style="font-size: clamp(1.3rem, 4vw, 1.8rem); margin-bottom: 1rem; color: #1f2937; font-weight: 700;">Android App</h3>
+                        <p style="color: #6b7280; margin-bottom: 2rem; line-height: 1.6;">Download the EduSphere mobile app for Android devices. Study on the go with offline support.</p>
+                        
+                        <div style="background: #f9fafb; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span style="color: #374151; font-weight: 500;">Offline Mode</span>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span style="color: #374151; font-weight: 500;">Push Notifications</span>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span style="color: #374151; font-weight: 500;">Optimized Performance</span>
+                            </div>
+                        </div>
+                        
+                        <a href="/Edusphere-mobile.apk" download style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s;">
+                            <i class="fab fa-android" style="margin-right: 0.5rem;"></i>
+                            Download for Android
+                        </a>
+                        <div style="margin-top: 1rem; color: #9ca3af; font-size: 0.9rem;">Version 1.0.0 • 25 MB</div>
+                    </div>
+                </div>
+
+                <!-- Windows PC App -->
+                <div style="background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 2px solid #f0f0f0;">
+                    <div style="text-align: center;">
+                        <div style="font-size: clamp(50px, 12vw, 80px); margin-bottom: 1rem;">💻</div>
+                        <h3 style="font-size: clamp(1.3rem, 4vw, 1.8rem); margin-bottom: 1rem; color: #1f2937; font-weight: 700;">Windows PC</h3>
+                        <p style="color: #6b7280; margin-bottom: 2rem; line-height: 1.6;">Download the EduSphere desktop application for Windows. Full-featured experience on your PC.</p>
+                        
+                        <div style="background: #f9fafb; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span style="color: #374151; font-weight: 500;">Large Screen Support</span>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span style="color: #374151; font-weight: 500;">Keyboard Shortcuts</span>
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span style="color: #374151; font-weight: 500;">Enhanced Features</span>
+                            </div>
+                        </div>
+                        
+                        <a href="/Edusphere-pc.exe" download style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); transition: all 0.3s;">
+                            <i class="fab fa-windows" style="margin-right: 0.5rem;"></i>
+                            Download for Windows
+                        </a>
+                        <div style="margin-top: 1rem; color: #9ca3af; font-size: 0.9rem;">Version 1.0.0 • 45 MB</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Installation Instructions -->
+            <div style="background: white; border-radius: 20px; padding: 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 2rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 2rem; color: #1f2937; text-align: center; font-weight: 700;">
+                    <i class="fas fa-info-circle" style="color: #667eea; margin-right: 0.5rem;"></i>
+                    Installation Instructions
+                </h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    <!-- Android Instructions -->
+                    <div>
+                        <h4 style="color: #3b82f6; margin-bottom: 1rem; font-size: 1.3rem; font-weight: 600;">
+                            <i class="fab fa-android"></i> Android
+                        </h4>
+                        <ol style="color: #4b5563; line-height: 2; padding-left: 1.5rem;">
+                            <li>Download the APK file</li>
+                            <li>Open the downloaded file</li>
+                            <li>Enable "Install from Unknown Sources" if prompted</li>
+                            <li>Follow the installation wizard</li>
+                            <li>Launch EduSphere and login</li>
+                        </ol>
+                    </div>
+                    
+                    <!-- Windows Instructions -->
+                    <div>
+                        <h4 style="color: #8b5cf6; margin-bottom: 1rem; font-size: 1.3rem; font-weight: 600;">
+                            <i class="fab fa-windows"></i> Windows
+                        </h4>
+                        <ol style="color: #4b5563; line-height: 2; padding-left: 1.5rem;">
+                            <li>Download the EXE file</li>
+                            <li>Run the installer</li>
+                            <li>Follow the setup wizard</li>
+                            <li>Choose installation directory</li>
+                            <li>Launch EduSphere from desktop shortcut</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Requirements -->
+            <div style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 20px; padding: 2rem; text-align: center;">
+                <h4 style="color: #374151; margin-bottom: 1.5rem; font-size: 1.3rem; font-weight: 600;">System Requirements</h4>
+                <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;">
+                    <div>
+                        <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.5rem;">Android</div>
+                        <div style="color: #6b7280;">Android 5.0 or higher</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.5rem;">Windows</div>
+                        <div style="color: #6b7280;">Windows 10 or higher</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.5rem;">Storage</div>
+                        <div style="color: #6b7280;">Minimum 100 MB free space</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Admin Section -->
     <section class="section" id="adminSection" style="display: none;">
         <div class="section-header">
@@ -24791,6 +25070,11 @@
                         <span>Performance</span>
                     </div>
                     
+                    <div class="sidebar-nav-item" data-section="allPerformanceSection" id="allPerformanceNavBtn" style="display: none;">
+                        <i class="fas fa-users"></i>
+                        <span>View Performance</span>
+                    </div>
+                    
                     <div class="sidebar-nav-item" data-section="myPapersSection">
                         <i class="fas fa-folder-open"></i>
                         <span>My Papers</span>
@@ -25897,32 +26181,20 @@
                 // Download the PDF
                 const blob = await pdfResponse.blob();
                 const url = window.URL.createObjectURL(blob);
+                const filename = `${config.schoolName}_${config.paperTitle}_${type}.pdf`;
                 
-                // Detect if mobile device
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                // Download the file
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
                 
-                if (isMobile) {
-                    // On mobile, open in new tab
-                    window.open(url, '_blank');
-                    showNotification(`${type} PDF opened in new tab!`, 'success');
-                    console.log('✅ PDF opened in new tab (mobile)');
-                    
-                    // Clean up after a delay
-                    setTimeout(() => {
-                        window.URL.revokeObjectURL(url);
-                    }, 1000);
-                } else {
-                    // On desktop, download
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${config.schoolName}_${config.paperTitle}_${type}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    showNotification(`${type} PDF downloaded successfully!`, 'success');
-                    console.log('✅ PDF generated and downloaded (desktop)');
-                }
+                console.log('✅ PDF generated and downloaded');
+                
+                // Show notification with click-to-open functionality
+                showPDFDownloadNotification(filename, url, type);
                 
             } catch (error) {
                 console.error('❌ Error generating PDF:', error);
@@ -28997,6 +29269,57 @@
             }
         }
 
+        // Open download page with error handling
+        function openDownloadPage() {
+            try {
+                console.log('🔄 Opening download page...');
+                
+                // Hide all sections first
+                document.querySelectorAll('.section').forEach(section => {
+                    section.style.display = 'none';
+                    section.classList.remove('active');
+                });
+                
+                // Hide main header/navigation
+                const header = document.querySelector('.header');
+                const mainContent = document.querySelector('.main-content');
+                const sidebar = document.querySelector('.sidebar');
+                
+                if (header) header.style.display = 'none';
+                if (sidebar) sidebar.style.display = 'none';
+                
+                // Get download section
+                const downloadSection = document.getElementById('downloadAppSection');
+                
+                if (!downloadSection) {
+                    console.error('❌ Download section not found!');
+                    alert('Download page not available. Please refresh the page.');
+                    return;
+                }
+                
+                // Show download section - it will cover everything
+                downloadSection.style.display = 'block';
+                downloadSection.style.visibility = 'visible';
+                downloadSection.style.opacity = '1';
+                downloadSection.classList.add('active');
+                
+                // Reset all scroll positions immediately
+                downloadSection.scrollTop = 0;
+                window.scrollTo(0, 0);
+                document.body.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+                
+                // Prevent body scroll
+                document.body.style.overflow = 'hidden';
+                
+                console.log('✅ Download page opened successfully - Full screen mode');
+                
+            } catch (error) {
+                console.error('❌ Error opening download page:', error);
+                alert('Error opening download page. Please try again.');
+            }
+        }
+
         // Show specific section
         // Show specific section
         function showSection(sectionId) {
@@ -29017,11 +29340,14 @@
             const targetSection = document.getElementById(sectionId);
             if (targetSection) {
                 targetSection.classList.add('active');
-                targetSection.style.display = 'block';
+                targetSection.style.setProperty('display', 'block', 'important');
                 targetSection.style.visibility = 'visible';
                 targetSection.style.opacity = '1';
+                targetSection.style.height = 'auto';
+                targetSection.style.overflow = 'visible';
                 console.log('✅ Section activated:', sectionId);
                 console.log('📐 Section visibility:', window.getComputedStyle(targetSection).display);
+                console.log('📐 Section height:', targetSection.scrollHeight);
 
                 // Load section-specific data
                 switch (sectionId) {
@@ -29047,6 +29373,15 @@
                             loadPerformanceData();
                             console.log('✅ Performance data loaded');
                         }, 100);
+                        break;
+                    case 'allPerformanceSection':
+                        console.log('📊 Loading all students performance section');
+                        setTimeout(() => {
+                            loadAllPerformanceData();
+                        }, 100);
+                        break;
+                    case 'downloadAppSection':
+                        console.log('📱 Loading download app section');
                         break;
                     case 'adminSection':
                         console.log('🔧 Loading admin section');
@@ -29145,10 +29480,24 @@
                 console.log('🔑 User is admin, showing admin elements');
                 const adminNavItem = document.getElementById('adminNavItem');
                 const adminDropdownItem = document.getElementById('adminDropdownItem');
+                const allPerformanceNavBtn = document.getElementById('allPerformanceNavBtn');
 
                 if (adminNavItem) {
                     adminNavItem.style.display = 'flex';
                     adminNavItem.classList.add('show-admin');
+                }
+                
+                // Show View Performance button for admin
+                if (allPerformanceNavBtn) {
+                    allPerformanceNavBtn.style.display = 'flex';
+                }
+            }
+            
+            // Show View Performance button for teachers too
+            if (currentUser && currentUser.role === 'teacher') {
+                const allPerformanceNavBtn = document.getElementById('allPerformanceNavBtn');
+                if (allPerformanceNavBtn) {
+                    allPerformanceNavBtn.style.display = 'flex';
                 }
             }
 
@@ -29437,22 +29786,310 @@
         }
 
         // Dashboard functions
-        function loadDashboardData() {
+        async function loadDashboardData() {
+            console.log('📊 Loading dashboard data...');
+            
             try {
-                const totalTests = document.getElementById('totalTests');
-                const averageScore = document.getElementById('averageScore');
-                const studyHours = document.getElementById('studyHours');
-                const rank = document.getElementById('rank');
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const userId = user._id || user.id;
+                
+                if (!token || !userId) {
+                    console.warn('⚠️ User not logged in, showing default dashboard');
+                    document.getElementById('dashboardTotalTests').textContent = '0';
+                    document.getElementById('dashboardAverageScore').textContent = '0%';
+                    document.getElementById('dashboardHighestScore').textContent = '0%';
+                    document.getElementById('dashboardTotalMarks').textContent = '0';
+                    return;
+                }
 
-                if (totalTests) totalTests.textContent = '12';
-                if (averageScore) averageScore.textContent = '78%';
-                if (studyHours) studyHours.textContent = '45';
-                if (rank) rank.textContent = '1,245';
+                // Fetch test results for dashboard
+                const response = await fetch(`${API_BASE}/api/test-results/user/${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load dashboard data');
+                }
+
+                const results = data.results;
+                console.log('✅ Loaded', results.length, 'test results for dashboard');
+
+                // Calculate statistics
+                const testsCompleted = results.length;
+                const avgPercentage = testsCompleted > 0 
+                    ? (results.reduce((sum, r) => sum + r.percentage, 0) / testsCompleted).toFixed(1)
+                    : 0;
+                
+                const highestPercentage = testsCompleted > 0
+                    ? Math.max(...results.map(r => r.percentage)).toFixed(1)
+                    : 0;
+                
+                const totalMarks = results.reduce((sum, r) => sum + r.totalMarks, 0);
+
+                // Calculate performance trend
+                const trend = calculatePerformanceTrend(results);
+
+                // Update dashboard cards
+                document.getElementById('dashboardTotalTests').textContent = testsCompleted;
+                document.getElementById('dashboardAverageScore').textContent = `${avgPercentage}%`;
+                document.getElementById('dashboardHighestScore').textContent = `${highestPercentage}%`;
+                document.getElementById('dashboardTotalMarks').textContent = totalMarks;
+                
+                // Update trend card
+                updateTrendCard(trend);
+
+                // Create dashboard performance chart
+                createDashboardChart(results);
 
                 console.log('✅ Dashboard data loaded successfully');
             } catch (error) {
                 console.error('❌ Error loading dashboard data:', error);
+                document.getElementById('dashboardTotalTests').textContent = '0';
+                document.getElementById('dashboardAverageScore').textContent = '0%';
+                document.getElementById('dashboardHighestScore').textContent = '0%';
+                document.getElementById('dashboardTotalMarks').textContent = '0';
             }
+        }
+
+        // Calculate performance trend
+        function calculatePerformanceTrend(results) {
+            if (results.length < 2) {
+                return { status: 'insufficient', change: 0, message: 'Need more tests' };
+            }
+
+            // Compare recent tests (last 3) with older tests (previous 3)
+            const recentCount = Math.min(3, Math.floor(results.length / 2));
+            const olderCount = recentCount;
+
+            if (results.length < recentCount + olderCount) {
+                return { status: 'insufficient', change: 0, message: 'Need more tests' };
+            }
+
+            const recentTests = results.slice(0, recentCount);
+            const olderTests = results.slice(recentCount, recentCount + olderCount);
+
+            const recentAvg = recentTests.reduce((sum, r) => sum + r.percentage, 0) / recentTests.length;
+            const olderAvg = olderTests.reduce((sum, r) => sum + r.percentage, 0) / olderTests.length;
+
+            const change = recentAvg - olderAvg;
+            const changePercent = ((change / olderAvg) * 100).toFixed(1);
+
+            let status, message;
+            if (change > 5) {
+                status = 'improving';
+                message = `+${change.toFixed(1)}% Improving`;
+            } else if (change < -5) {
+                status = 'declining';
+                message = `${change.toFixed(1)}% Declining`;
+            } else {
+                status = 'stable';
+                message = 'Stable';
+            }
+
+            return { status, change, changePercent, message };
+        }
+
+        // Update trend card with visual indicators
+        function updateTrendCard(trend) {
+            const trendElement = document.getElementById('dashboardTrend');
+            const trendIcon = document.getElementById('dashboardTrendIcon');
+            const trendIconWrapper = document.getElementById('dashboardTrendIconWrapper');
+
+            if (!trendElement || !trendIcon || !trendIconWrapper) return;
+
+            // Remove all color classes
+            trendIconWrapper.classList.remove('purple', 'blue', 'green', 'orange', 'red');
+
+            switch (trend.status) {
+                case 'improving':
+                    trendElement.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-arrow-up" style="color: #10b981; font-size: 1.5rem;"></i>
+                            <span style="color: #10b981; font-weight: 700;">Improving</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: #059669; margin-top: 0.25rem;">
+                            ${trend.message}
+                        </div>
+                    `;
+                    trendIconWrapper.classList.add('green');
+                    trendIcon.className = 'fas fa-arrow-trend-up';
+                    break;
+
+                case 'declining':
+                    trendElement.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-arrow-down" style="color: #ef4444; font-size: 1.5rem;"></i>
+                            <span style="color: #ef4444; font-weight: 700;">Declining</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: #dc2626; margin-top: 0.25rem;">
+                            ${trend.message}
+                        </div>
+                    `;
+                    trendIconWrapper.classList.add('red');
+                    trendIcon.className = 'fas fa-arrow-trend-down';
+                    break;
+
+                case 'stable':
+                    trendElement.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-minus" style="color: #f59e0b; font-size: 1.5rem;"></i>
+                            <span style="color: #f59e0b; font-weight: 700;">Stable</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: #d97706; margin-top: 0.25rem;">
+                            Consistent performance
+                        </div>
+                    `;
+                    trendIconWrapper.classList.add('orange');
+                    trendIcon.className = 'fas fa-equals';
+                    break;
+
+                case 'insufficient':
+                default:
+                    trendElement.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-chart-line" style="color: #6b7280; font-size: 1.5rem;"></i>
+                            <span style="color: #6b7280; font-weight: 700;">--</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: #9ca3af; margin-top: 0.25rem;">
+                            ${trend.message}
+                        </div>
+                    `;
+                    trendIconWrapper.classList.add('purple');
+                    trendIcon.className = 'fas fa-chart-line';
+                    break;
+            }
+        }
+
+        // Update performance section trend indicators
+        function updatePerformanceTrendIndicators(trend) {
+            // Update the score-change elements in performance section
+            const scoreChangeElements = document.querySelectorAll('#performanceSection .score-change');
+            
+            if (scoreChangeElements.length > 0) {
+                let trendHTML = '';
+                let trendColor = '';
+                
+                switch (trend.status) {
+                    case 'improving':
+                        trendHTML = `<i class="fas fa-arrow-up"></i> ${trend.message}`;
+                        trendColor = 'var(--success)';
+                        break;
+                    case 'declining':
+                        trendHTML = `<i class="fas fa-arrow-down"></i> ${trend.message}`;
+                        trendColor = 'var(--error)';
+                        break;
+                    case 'stable':
+                        trendHTML = `<i class="fas fa-minus"></i> ${trend.message}`;
+                        trendColor = 'var(--warning)';
+                        break;
+                    default:
+                        trendHTML = trend.message;
+                        trendColor = 'var(--gray-500)';
+                }
+                
+                // Update first score-change element with trend
+                if (scoreChangeElements[0]) {
+                    scoreChangeElements[0].innerHTML = trendHTML;
+                    scoreChangeElements[0].style.color = trendColor;
+                }
+            }
+        }
+
+        // Create dashboard performance chart
+        function createDashboardChart(results) {
+            const container = document.getElementById('dashboardPerformanceChart');
+            if (!container) return;
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--gray-400);">
+                        <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>Take tests to see your performance graph</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Create canvas for chart
+            container.innerHTML = `<canvas id="dashboardChart"></canvas>`;
+
+            // Prepare data - last 7 tests
+            const recentTests = results.slice(0, 7).reverse();
+            const labels = recentTests.map((r, i) => {
+                const date = new Date(r.timestamp);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const percentages = recentTests.map(r => r.percentage);
+
+            // Create chart
+            const ctx = document.getElementById('dashboardChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Score %',
+                        data: percentages,
+                        borderColor: 'rgb(99, 102, 241)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: 'rgb(99, 102, 241)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Score: ' + context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Global variables
@@ -31400,32 +32037,101 @@
             }, 1000);
         }
 
-        function submitTest() {
+        async function submitTest() {
             if (timerInterval) {
                 clearInterval(timerInterval);
             }
 
-            let score = 0;
+            let correct = 0;
+            let incorrect = 0;
+            let unanswered = 0;
+            
             currentTest.questions.forEach(question => {
-                if (userAnswers[question.id] === question.answer) {
-                    score++;
+                const userAnswer = userAnswers[question.id];
+                if (!userAnswer) {
+                    unanswered++;
+                } else if (userAnswer === question.answer) {
+                    correct++;
+                } else {
+                    incorrect++;
                 }
             });
 
-            const percentage = (score / currentTest.questions.length * 100).toFixed(1);
+            const totalQuestions = currentTest.questions.length;
+            const score = correct * 4; // 4 marks per correct answer
+            const maxMarks = totalQuestions * 4;
+            const percentage = ((correct / totalQuestions) * 100).toFixed(1);
             const timeSpent = Math.floor((new Date() - testStartTime) / 1000);
+
+            // Save test result to database
+            try {
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+                const userId = user._id || user.id; // Support both _id and id
+                
+                if (userId && token) {
+                    console.log('💾 Saving test result to database...');
+                    
+                    const resultData = {
+                        userId: userId,
+                        username: user.username,
+                        testId: currentTest._id || null,
+                        mockTestId: currentTest.mockTestId || null,
+                        testTitle: currentTest.title || currentTest.name || 'Practice Test',
+                        testType: currentTest.testType || 'practice',
+                        answers: userAnswers,
+                        score: score,
+                        totalMarks: score,
+                        maxMarks: maxMarks,
+                        totalQuestions: totalQuestions,
+                        correct: correct,
+                        incorrect: incorrect,
+                        unanswered: unanswered,
+                        percentage: parseFloat(percentage),
+                        timeSpent: timeSpent,
+                        hasNegativeMarking: false
+                    };
+                    
+                    console.log('📊 Test result data:', resultData);
+                    
+                    const response = await fetch(`${API_BASE}/api/test-results`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(resultData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        console.log('✅ Test result saved successfully!');
+                    } else {
+                        console.error('❌ Failed to save test result:', data.error);
+                    }
+                } else {
+                    console.warn('⚠️ User not logged in, test result not saved');
+                }
+            } catch (error) {
+                console.error('❌ Error saving test result:', error);
+            }
 
             document.getElementById('testContent').innerHTML = `
                 <div class="card">
                     <h3 style="text-align: center; margin-bottom: 1rem;">Test Completed!</h3>
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-value">${score}/${currentTest.questions.length}</div>
-                            <div class="stat-label">Score</div>
+                            <div class="stat-value">${correct}/${totalQuestions}</div>
+                            <div class="stat-label">Correct</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-value">${percentage}%</div>
                             <div class="stat-label">Percentage</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${score}/${maxMarks}</div>
+                            <div class="stat-label">Score</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-value">${Math.floor(timeSpent / 60)}:${(timeSpent % 60).toString().padStart(2, '0')}</div>
@@ -31433,10 +32139,27 @@
                         </div>
                     </div>
                     
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: var(--gray-100); border-radius: 8px;">
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center;">
+                            <div>
+                                <div style="color: var(--success); font-size: 1.5rem; font-weight: bold;">${correct}</div>
+                                <div style="color: var(--gray-600); font-size: 0.9rem;">Correct</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--error); font-size: 1.5rem; font-weight: bold;">${incorrect}</div>
+                                <div style="color: var(--gray-600); font-size: 0.9rem;">Incorrect</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--warning); font-size: 1.5rem; font-weight: bold;">${unanswered}</div>
+                                <div style="color: var(--gray-600); font-size: 0.9rem;">Unanswered</div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div style="text-align: center; margin-top: 2rem;">
                         <button class="btn btn-primary" onclick="closeTestModal()">
                             <i class="fas fa-check"></i>
-                            Review Results
+                            Close & View Performance
                         </button>
                     </div>
                 </div>
@@ -31446,7 +32169,7 @@
             document.getElementById('nextQuestion').style.display = 'none';
             document.getElementById('submitTest').style.display = 'none';
 
-            showNotification(`Test submitted! Score: ${score}/${currentTest.questions.length} (${percentage}%)`, 'success');
+            showNotification(`✅ Test submitted! Score: ${correct}/${totalQuestions} (${percentage}%)`, 'success');
         }
 
         function closeTestModal() {
@@ -31456,43 +32179,8 @@
             }
         }
 
-        // Performance functions
-        function loadPerformanceData() {
-            document.getElementById('performanceScore').textContent = '78%';
-            document.getElementById('testsCompleted').textContent = '12';
-            document.getElementById('improvement').textContent = '15%';
-            document.getElementById('accuracy').textContent = '82%';
-
-            document.getElementById('testHistory').innerHTML = `
-                <div class="test-card">
-                    <div class="test-header">
-                        <div class="test-title">JEE Physics Full Test</div>
-                        <div class="test-meta">
-                            <span><i class="fas fa-calendar"></i> 2 days ago</span>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 2rem; margin-top: 1rem;">
-                        <div><strong>Score:</strong> 65/75</div>
-                        <div><strong>Percentage:</strong> 86.7%</div>
-                        <div><strong>Time:</strong> 2h 45m</div>
-                    </div>
-                </div>
-                
-                <div class="test-card">
-                    <div class="test-header">
-                        <div class="test-title">NEET Biology Practice</div>
-                        <div class="test-meta">
-                            <span><i class="fas fa-calendar"></i> 1 week ago</span>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 2rem; margin-top: 1rem;">
-                        <div><strong>Score:</strong> 38/45</div>
-                        <div><strong>Percentage:</strong> 84.4%</div>
-                        <div><strong>Time:</strong> 55m</div>
-                    </div>
-                </div>
-            `;
-        }
+        // Performance functions - REMOVED OLD DUMMY FUNCTION
+        // Real loadPerformanceData() is defined later at line ~37182
 
         // AI Guidance functions
         async function getAIGuidance() {
@@ -37144,12 +37832,7 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
             }, 1000);
         }
 
-        function submitTest() {
-            // Collect answers and show results
-            showNotification('Test submitted successfully!', 'success');
-            // Return to dashboard
-            showSection('dashboardSection');
-        }
+        // submitTest() function is defined earlier (line ~31405) with full implementation
 
         function endTest() {
             if (confirm('Are you sure you want to end the test?')) {
@@ -37172,6 +37855,16 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
         }
 
         function goBackToHome() {
+            // Restore header/navigation
+            const header = document.querySelector('.header');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (header) header.style.display = '';
+            if (sidebar) sidebar.style.display = '';
+            
+            // Restore body scroll
+            document.body.style.overflow = '';
+            
             // Navigate back to the dashboard/home section
             showSection('dashboardSection');
         }
@@ -37184,12 +37877,22 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                 const token = localStorage.getItem('token');
                 const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 
+                // Support both _id (new) and id (old) for backward compatibility
+                // Also support username as fallback identifier
+                const userId = user._id || user.id || user.username;
+                
                 console.log('🔍 Debug - Token:', token ? 'exists' : 'missing');
                 console.log('🔍 Debug - User:', user);
-                console.log('🔍 Debug - User ID:', user._id);
+                console.log('🔍 Debug - User ID:', userId);
                 
-                if (!token || !user || !user._id) {
-                    console.warn('⚠️ User not logged in, showing empty state');
+                if (!token || !user || !userId) {
+                    console.warn('⚠️ User not logged in or missing user ID');
+                    
+                    // If user exists but no ID, they need to re-login
+                    const message = (token && user.username && !userId) 
+                        ? 'Please log out and log back in to refresh your session'
+                        : 'Please login to view your performance data';
+                    
                     document.getElementById('overallScore').textContent = '0%';
                     document.getElementById('testsCompleted').textContent = '0';
                     document.getElementById('accuracy').textContent = '0%';
@@ -37198,29 +37901,38 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                     document.getElementById('recentTestResults').innerHTML = `
                         <div style="text-align: center; padding: 3rem; color: var(--gray-500);">
                             <i class="fas fa-sign-in-alt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                            <p>Please login to view your performance data</p>
+                            <p>${message}</p>
                         </div>
                     `;
                     
                     document.getElementById('subjectPerformance').innerHTML = `
                         <div style="text-align: center; padding: 3rem; color: var(--gray-500);">
                             <i class="fas fa-sign-in-alt" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                            <p>Please login to view performance charts</p>
+                            <p>${message}</p>
                         </div>
                     `;
                     return;
                 }
 
                 // Fetch test results for current user
-                const response = await fetch(`${API_BASE}/api/test-results/user/${user._id}`, {
+                const apiUrl = `${API_BASE}/api/test-results/user/${userId}`;
+                console.log('📡 Fetching from:', apiUrl);
+                console.log('🔑 Using token:', token ? token.substring(0, 20) + '...' : 'none');
+                
+                const response = await fetch(apiUrl, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
 
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response ok:', response.ok);
+
                 const data = await response.json();
+                console.log('📊 Response data:', data);
 
                 if (!data.success) {
+                    console.error('❌ API returned error:', data.error);
                     throw new Error(data.error || 'Failed to load performance data');
                 }
 
@@ -37242,17 +37954,25 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                 // Find best subject (placeholder - would need subject data)
                 const bestSubject = 'Physics';
 
+                // Calculate performance trend
+                const trend = calculatePerformanceTrend(results);
+
                 // Update overview cards
                 document.getElementById('overallScore').textContent = `${avgPercentage}%`;
                 document.getElementById('testsCompleted').textContent = testsCompleted;
                 document.getElementById('accuracy').textContent = `${accuracy}%`;
                 document.getElementById('bestSubject').textContent = bestSubject;
+                
+                // Update trend indicators in performance section
+                updatePerformanceTrendIndicators(trend);
 
                 // Load recent test results table
                 loadRecentTestResults(results);
 
-                // Create performance chart
+                // Create performance charts
                 createPerformanceChart(results);
+                createScoreProgressChart(results);
+                createSubjectPerformanceChart(results);
 
             } catch (error) {
                 console.error('❌ Error loading performance data:', error);
@@ -37417,7 +38137,378 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
             });
         }
 
+        // Create Score Progress Chart (Line chart showing score over time)
+        let scoreProgressChartInstance = null;
+        function createScoreProgressChart(results) {
+            const canvas = document.getElementById('scoreProgressChart');
+            if (!canvas) return;
 
+            // Destroy existing chart instance if it exists
+            if (scoreProgressChartInstance) {
+                scoreProgressChartInstance.destroy();
+                scoreProgressChartInstance = null;
+            }
+
+            if (results.length === 0) {
+                canvas.parentElement.innerHTML = `
+                    <h3 style="margin: 0 0 1rem 0; color: var(--gray-800); font-size: 1.1rem;">Score Progress</h3>
+                    <div style="text-align: center; padding: 3rem; color: var(--gray-400);">
+                        <i class="fas fa-chart-line" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>Take tests to see your score progress</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Prepare data - all tests in chronological order
+            const sortedResults = [...results].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            const labels = sortedResults.map((r, i) => {
+                const date = new Date(r.timestamp);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            const percentages = sortedResults.map(r => r.percentage);
+
+            const ctx = canvas.getContext('2d');
+            scoreProgressChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Score %',
+                        data: percentages,
+                        borderColor: 'rgb(99, 102, 241)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: 'rgb(99, 102, 241)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 10,
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return sortedResults[index].testTitle;
+                                },
+                                label: function(context) {
+                                    return 'Score: ' + context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create Subject-wise Performance Chart (Bar chart)
+        let subjectPerformanceChartInstance = null;
+        function createSubjectPerformanceChart(results) {
+            const canvas = document.getElementById('subjectPerformanceChart');
+            if (!canvas) return;
+
+            // Destroy existing chart instance if it exists
+            if (subjectPerformanceChartInstance) {
+                subjectPerformanceChartInstance.destroy();
+                subjectPerformanceChartInstance = null;
+            }
+
+            if (results.length === 0) {
+                canvas.parentElement.innerHTML = `
+                    <h3 style="margin: 0 0 1rem 0; color: var(--gray-800); font-size: 1.1rem;">Subject-wise Performance</h3>
+                    <div style="text-align: center; padding: 3rem; color: var(--gray-400);">
+                        <i class="fas fa-chart-bar" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>Take tests to see subject-wise performance</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group results by subject (extract from test title)
+            const subjectData = {};
+            results.forEach(result => {
+                const title = result.testTitle.toLowerCase();
+                let subject = 'Other';
+                
+                if (title.includes('physics')) subject = 'Physics';
+                else if (title.includes('chemistry')) subject = 'Chemistry';
+                else if (title.includes('math')) subject = 'Mathematics';
+                else if (title.includes('biology')) subject = 'Biology';
+                
+                if (!subjectData[subject]) {
+                    subjectData[subject] = { total: 0, count: 0 };
+                }
+                subjectData[subject].total += result.percentage;
+                subjectData[subject].count += 1;
+            });
+
+            // Calculate averages
+            const subjects = Object.keys(subjectData);
+            const averages = subjects.map(subject => 
+                (subjectData[subject].total / subjectData[subject].count).toFixed(1)
+            );
+
+            // Subject colors
+            const colors = {
+                'Physics': 'rgba(59, 130, 246, 0.8)',
+                'Chemistry': 'rgba(16, 185, 129, 0.8)',
+                'Mathematics': 'rgba(245, 158, 11, 0.8)',
+                'Biology': 'rgba(239, 68, 68, 0.8)',
+                'Other': 'rgba(107, 114, 128, 0.8)'
+            };
+
+            const backgroundColors = subjects.map(s => colors[s] || colors['Other']);
+
+            const ctx = canvas.getContext('2d');
+            subjectPerformanceChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: subjects,
+                    datasets: [{
+                        label: 'Average Score %',
+                        data: averages,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(c => c.replace('0.8', '1')),
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    const subject = context.label;
+                                    const avg = context.parsed.y;
+                                    const count = subjectData[subject].count;
+                                    return [
+                                        `Average: ${avg}%`,
+                                        `Tests: ${count}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // All Students Performance Functions
+        let allPerformanceData = [];
+        let filteredPerformanceData = [];
+
+        async function loadAllPerformanceData() {
+            console.log('📊 Loading all students performance data...');
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showNotification('Please login to view performance data', 'error');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/test-results/all`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    allPerformanceData = data.results;
+                    filteredPerformanceData = allPerformanceData;
+                    displayAllPerformanceData(filteredPerformanceData);
+                    updatePerformanceSummary(filteredPerformanceData);
+                } else {
+                    throw new Error(data.error || 'Failed to load performance data');
+                }
+            } catch (error) {
+                console.error('❌ Error loading all performance data:', error);
+                document.getElementById('allPerformanceTable').innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--error);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>Error loading performance data</p>
+                    </div>
+                `;
+            }
+        }
+
+        function filterByDays(days) {
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (days === null) {
+                // Show all data
+                filteredPerformanceData = allPerformanceData;
+            } else {
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - days);
+                
+                filteredPerformanceData = allPerformanceData.filter(result => {
+                    const resultDate = new Date(result.timestamp);
+                    return resultDate >= cutoffDate;
+                });
+            }
+            
+            displayAllPerformanceData(filteredPerformanceData);
+            updatePerformanceSummary(filteredPerformanceData);
+        }
+
+        function filterByCustomDate() {
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+            
+            if (!startDate || !endDate) {
+                showNotification('Please select both start and end dates', 'warning');
+                return;
+            }
+            
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999); // Include the entire end date
+            
+            filteredPerformanceData = allPerformanceData.filter(result => {
+                const resultDate = new Date(result.timestamp);
+                return resultDate >= start && resultDate <= end;
+            });
+            
+            // Remove active class from quick filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            
+            displayAllPerformanceData(filteredPerformanceData);
+            updatePerformanceSummary(filteredPerformanceData);
+        }
+
+        function updatePerformanceSummary(data) {
+            // Get unique students
+            const uniqueStudents = new Set(data.map(r => r.userId));
+            document.getElementById('totalStudents').textContent = uniqueStudents.size;
+            
+            // Total tests
+            document.getElementById('totalTests').textContent = data.length;
+            
+            // Average score
+            const avgScore = data.length > 0 
+                ? (data.reduce((sum, r) => sum + r.percentage, 0) / data.length).toFixed(1)
+                : 0;
+            document.getElementById('avgScore').textContent = avgScore + '%';
+            
+            // Highest score
+            const highestScore = data.length > 0
+                ? Math.max(...data.map(r => r.percentage)).toFixed(1)
+                : 0;
+            document.getElementById('highestScore').textContent = highestScore + '%';
+        }
+
+        function displayAllPerformanceData(data) {
+            const container = document.getElementById('allPerformanceTable');
+            
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: var(--gray-400);">
+                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>No test results found for the selected period</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by timestamp (newest first)
+            const sortedData = [...data].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            let tableHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--gray-100); border-bottom: 2px solid var(--gray-300);">
+                            <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--gray-700);">Date</th>
+                            <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--gray-700);">Student</th>
+                            <th style="padding: 1rem; text-align: left; font-weight: 600; color: var(--gray-700);">Test Name</th>
+                            <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--gray-700);">Score</th>
+                            <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--gray-700);">Correct</th>
+                            <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--gray-700);">Wrong</th>
+                            <th style="padding: 1rem; text-align: center; font-weight: 600; color: var(--gray-700);">Unattempted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedData.forEach((result, index) => {
+                const date = new Date(result.timestamp);
+                const dateStr = date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const scoreColor = result.percentage >= 75 ? 'var(--success)' : 
+                                  result.percentage >= 50 ? 'var(--warning)' : 'var(--error)';
+                
+                const bgColor = index % 2 === 0 ? 'white' : 'var(--gray-50)';
+                
+                tableHTML += `
+                    <tr style="background: ${bgColor}; border-bottom: 1px solid var(--gray-200); transition: all 0.2s;" onmouseover="this.style.background='var(--gray-100)'" onmouseout="this.style.background='${bgColor}'">
+                        <td style="padding: 1rem; color: var(--gray-600);">${dateStr}</td>
+                        <td style="padding: 1rem; color: var(--gray-800); font-weight: 500;">${result.username || result.userId}</td>
+                        <td style="padding: 1rem; color: var(--gray-700);">${result.testTitle}</td>
+                        <td style="padding: 1rem; text-align: center;">
+                            <span style="background: ${scoreColor}; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">
+                                ${result.percentage.toFixed(1)}%
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; text-align: center; color: var(--success); font-weight: 600;">${result.correct}</td>
+                        <td style="padding: 1rem; text-align: center; color: var(--error); font-weight: 600;">${result.wrong}</td>
+                        <td style="padding: 1rem; text-align: center; color: var(--gray-500);">${result.unattempted}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
 
         // Admin Panel Functions
         function showAdminTab(tabName) {
@@ -40716,16 +41807,42 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                             const element = document.getElementById(id);
                             if (element) {
                                 if (isGujarati) {
+                                    // Add Gujarati classes and attributes
                                     element.classList.add('lang-gu', 'gujarati-text');
                                     element.setAttribute('lang', 'gu');
+                                    
+                                    // Force apply Gujarati font styles immediately
+                                    element.style.fontFamily = "Noto Sans Gujarati, Shruti, Lohit Gujarati, sans-serif";
+                                    element.style.fontSize = '1.15em';
+                                    element.style.lineHeight = '1.7';
+                                    element.style.fontWeight = '500';
+                                    
+                                    // Add visual indicator
+                                    element.style.borderColor = '#f59e0b';
+                                    element.style.backgroundColor = '#fffbeb';
                                 } else {
+                                    // Remove Gujarati classes and attributes
                                     element.classList.remove('lang-gu', 'gujarati-text');
                                     element.removeAttribute('lang');
+                                    
+                                    // Reset to default styles
+                                    element.style.fontFamily = '';
+                                    element.style.fontSize = '';
+                                    element.style.lineHeight = '';
+                                    element.style.borderColor = '';
+                                    element.style.backgroundColor = '';
                                 }
                             }
                         });
                         
-                        console.log(`🌐 Language changed to: ${isGujarati ? 'Gujarati' : 'English'}`);
+                        // Show notification
+                        if (isGujarati) {
+                            showNotification('🌐 Gujarati language selected - Font applied to all text fields', 'success');
+                        } else {
+                            showNotification('🌐 English language selected', 'info');
+                        }
+                        
+                        console.log(`🌐 Language changed to: ${isGujarati ? 'Gujarati (ગુજરાતી)' : 'English'}`);
                     });
                 }
                 
@@ -40735,6 +41852,76 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                 showNotification('Enhanced question modal not found', 'error');
             }
         }
+
+        // Gujarati Text Preview Handler
+        function setupGujaratiPreview() {
+            const languageSelect = document.getElementById('enhancedLanguage');
+            if (!languageSelect) return;
+
+            // Add real-time preview for Gujarati text
+            const textFields = [
+                { id: 'enhancedQuestionText', label: 'Question Text' },
+                { id: 'enhancedOptionA', label: 'Option A' },
+                { id: 'enhancedOptionB', label: 'Option B' },
+                { id: 'enhancedOptionC', label: 'Option C' },
+                { id: 'enhancedOptionD', label: 'Option D' },
+                { id: 'enhancedSolution', label: 'Solution' },
+                { id: 'enhancedExplanation', label: 'Explanation' },
+                { id: 'enhancedHints', label: 'Hints' }
+            ];
+
+            textFields.forEach(field => {
+                const element = document.getElementById(field.id);
+                if (element) {
+                    // Add input event listener for live preview
+                    element.addEventListener('input', function() {
+                        const lang = languageSelect.value;
+                        if (lang === 'gu') {
+                            // Apply Gujarati font class
+                            this.classList.add('lang-gu', 'gujarati-text');
+                            this.setAttribute('lang', 'gu');
+                            this.style.fontFamily = "Noto Sans Gujarati, Shruti, Lohit Gujarati, sans-serif";
+                            this.style.fontSize = '1.15em';
+                            this.style.lineHeight = '1.7';
+                            this.style.fontWeight = '500';
+                        }
+                    });
+                }
+            });
+
+            console.log('✅ Gujarati preview handler setup complete');
+        }
+
+        // Manual function to apply Gujarati font (for testing)
+        window.applyGujaratiFont = function() {
+            const textAreas = [
+                'enhancedQuestionText',
+                'enhancedOptionA', 'enhancedOptionB', 'enhancedOptionC', 'enhancedOptionD',
+                'enhancedSolution', 'enhancedExplanation', 'enhancedHints', 'enhancedReferences'
+            ];
+            
+            textAreas.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.add('lang-gu', 'gujarati-text');
+                    element.setAttribute('lang', 'gu');
+                    element.style.fontFamily = "Noto Sans Gujarati, Shruti, Lohit Gujarati, sans-serif";
+                    element.style.fontSize = '1.15em';
+                    element.style.lineHeight = '1.7';
+                    element.style.fontWeight = '500';
+                    element.style.borderColor = '#f59e0b';
+                    element.style.backgroundColor = '#fffbeb';
+                }
+            });
+            
+            console.log('✅ Gujarati font manually applied to all fields');
+            showNotification('✅ Gujarati font applied! Try typing: નમસ્તે', 'success');
+        };
+
+        // Call setup on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setupGujaratiPreview();
+        });
 
         function closeEnhancedQuestionModal() {
             console.log('❌ Closing enhanced question modal...');
@@ -44566,19 +45753,111 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                 // Download the PDF
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
+                const filename = `${config.schoolName || 'GYANMANJARI'}_${config.paperTitle || 'MOCK'}_${type}.pdf`;
+                
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${config.schoolName || 'GYANMANJARI'}_${config.paperTitle || 'MOCK'}_${type}.pdf`;
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
 
                 console.log(`✅ ${type} PDF downloaded successfully`);
+                
+                // Show notification with click-to-open functionality
+                showPDFDownloadNotification(filename, url, type);
             } catch (error) {
                 console.error(`❌ Error generating ${type} PDF:`, error);
                 throw error;
             }
+        }
+
+        // Show PDF download notification with click-to-open
+        function showPDFDownloadNotification(filename, pdfUrl, type) {
+            // Request notification permission if not granted
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            
+            // Show browser notification (if permission granted)
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const notification = new Notification('PDF Downloaded Successfully! 📄', {
+                    body: `${filename}\nClick to open the PDF`,
+                    icon: '/favicon.ico',
+                    badge: '/favicon.ico',
+                    tag: 'pdf-download',
+                    requireInteraction: true
+                });
+                
+                notification.onclick = function() {
+                    window.open(pdfUrl, '_blank');
+                    notification.close();
+                };
+            }
+            
+            // Show in-app notification with click-to-open
+            const notificationDiv = document.createElement('div');
+            notificationDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px 25px;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                z-index: 10000;
+                max-width: 400px;
+                cursor: pointer;
+                animation: slideIn 0.3s ease-out;
+                font-family: Arial, sans-serif;
+            `;
+            
+            notificationDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="font-size: 40px;">📄</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 16px; margin-bottom: 5px;">PDF Downloaded!</div>
+                        <div style="font-size: 13px; opacity: 0.95; margin-bottom: 8px;">${filename}</div>
+                        <div style="font-size: 12px; opacity: 0.85; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 6px; display: inline-block;">
+                            👆 Click to open PDF
+                        </div>
+                    </div>
+                    <div style="font-size: 24px; opacity: 0.7; cursor: pointer;" onclick="event.stopPropagation(); this.parentElement.parentElement.remove();">×</div>
+                </div>
+            `;
+            
+            // Add animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Click to open PDF
+            notificationDiv.onclick = function() {
+                window.open(pdfUrl, '_blank');
+                notificationDiv.remove();
+            };
+            
+            document.body.appendChild(notificationDiv);
+            
+            // Auto-remove after 10 seconds
+            setTimeout(() => {
+                if (notificationDiv.parentElement) {
+                    notificationDiv.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => notificationDiv.remove(), 300);
+                }
+            }, 10000);
         }
 
         // Build Question Paper HTML with Page Border (GYANMANJARI Style)

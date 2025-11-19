@@ -1288,6 +1288,7 @@ const initializeServer = async () => {
           return res.json({
             success: true,
             user: {
+              _id: user._id,
               id: user._id,
               username: user.username,
               role: user.role,
@@ -1397,6 +1398,7 @@ const initializeServer = async () => {
         success: true,
         message: 'Registration successful! Welcome to EduSphere Pro!',
         user: {
+          _id: newUser._id,
           id: newUser._id,
           username: newUser.username,
           role: newUser.role,
@@ -2817,6 +2819,37 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
     }
   });
 
+  // Get all test results (for admin/teacher to view all students' performance)
+  app.get('/api/test-results/all', authenticate, async (req, res) => {
+    try {
+      const results = await TestResult.find({})
+        .sort({ timestamp: -1 })
+        .limit(500);
+
+      // Populate username from User collection
+      const resultsWithUsernames = await Promise.all(
+        results.map(async (result) => {
+          const user = await User.findById(result.userId);
+          return {
+            ...result.toObject(),
+            username: user ? user.username : 'Unknown'
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        results: resultsWithUsernames
+      });
+    } catch (error) {
+      console.error('Error fetching all test results:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error fetching test results'
+      });
+    }
+  });
+
   // Get all test results for a specific mock test (admin only)
   app.get('/api/test-results/mock/:mockTestId', authenticate, async (req, res) => {
     try {
@@ -3729,15 +3762,62 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
     }
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.4; white-space: pre-wrap; }
-    .header { border: 3px solid #000; padding: 20px 25px; margin-bottom: 12px; }
-    .school-name { font-size: 20pt; font-weight: bold; text-align: center; margin-bottom: 15px; line-height: 1.2; }
-    .header-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 10pt; line-height: 1.4; }
-    .header-row:last-child { margin-bottom: 0; }
-    .left-col { text-align: left; flex: 1; padding-right: 10px; }
-    .center-col { text-align: center; flex: 1; font-size: 13pt; font-weight: bold; line-height: 1.3; padding: 0 10px; }
-    .right-col { text-align: right; flex: 1; padding-left: 10px; }
-    .section-title { border: 2px solid #000; padding: 3px 10px; display: inline-block; margin: 6px 0 8px 0; font-weight: bold; font-size: 9pt; }
+    body { font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.4; white-space: pre-wrap; padding: 10mm; }
+    
+    /* Compact Header Design */
+    .header { 
+      border: 2px solid #000; 
+      padding: 10px 15px; 
+      margin-bottom: 8px; 
+    }
+    .school-name { 
+      font-size: 24pt; 
+      font-weight: bold; 
+      text-align: center; 
+      margin-bottom: 8px; 
+      line-height: 0.6; 
+    }
+    .header-info { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: flex-start;
+      font-size: 10pt;
+      line-height: 0.6;
+    }
+    .header-left { 
+      text-align: left; 
+      flex: 1;
+      line-height: 0.6;
+    }
+    .header-center { 
+      text-align: center; 
+      flex: 1;
+      font-size: 18pt; 
+      font-weight: bold;
+      padding: 0 15px;
+      line-height: 0.6;
+    }
+    .header-right { 
+      text-align: right; 
+      flex: 1;
+      line-height: 0.6;
+    }
+    .info-line { 
+      margin: 0; 
+      line-height: 0.6;
+    }
+    .info-label { 
+      font-weight: bold; 
+    }
+    
+    .section-title { 
+      border: 2px dashed #000; 
+      padding: 4px 10px; 
+      display: inline-block; 
+      margin: 8px 0 10px 0; 
+      font-weight: bold; 
+      font-size: 10pt; 
+    }
     
     /* Two-column layout for questions */
     .two-column { column-count: 2; column-gap: 15px; column-rule: 1px solid #ddd; }
@@ -3760,20 +3840,20 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
 <body>
   <div class="header">
     <div class="school-name">${schoolName}</div>
-    <div class="header-row">
-      <div class="left-col"><strong>Subject</strong> : ${subject}</div>
-      <div class="center-col">${paperTitle}${typeLabel ? ` ${typeLabel}` : ''}</div>
-      <div class="right-col"><strong>Paper Set</strong> : ${paperSet}</div>
-    </div>
-    <div class="header-row">
-      <div class="left-col"><strong>Standard</strong> : ${standard}</div>
-      <div class="center-col"></div>
-      <div class="right-col"><strong>Date</strong> : ${examDate}</div>
-    </div>
-    <div class="header-row">
-      <div class="left-col"><strong>Total Mark</strong> : ${totalMarks}</div>
-      <div class="center-col"></div>
-      <div class="right-col"><strong>Time</strong> : ${examTime}</div>
+    <div class="header-info">
+      <div class="header-left">
+        <div class="info-line"><span class="info-label">Subject</span> : ${subject}</div>
+        <div class="info-line"><span class="info-label">Standard</span> : ${standard}</div>
+        <div class="info-line"><span class="info-label">Total Mark</span> : ${totalMarks}</div>
+      </div>
+      <div class="header-center">
+        ${paperTitle}${typeLabel ? ` ${typeLabel}` : ''}
+      </div>
+      <div class="header-right">
+        <div class="info-line"><span class="info-label">Paper Set</span> : ${paperSet}</div>
+        <div class="info-line"><span class="info-label">Date</span> : ${examDate}</div>
+        <div class="info-line"><span class="info-label">Time</span> : ${examTime}</div>
+      </div>
     </div>
   </div>
 `;

@@ -1,19 +1,34 @@
-/* Gujarati Font - EKLG-13-BoldItalic */
-@font-face {
-    font-family: 'EKLG-13-BoldItalic';
-    src: url('EKLG-13-BoldItalic.ttf') format('truetype');
-    font-weight: bold;
-    font-style: italic;
-}
+/* Gujarati Font - Using Google Fonts (Noto Sans Gujarati) */
+/* Note: EKLG13K_.TTF has parsing errors, using reliable Google Fonts instead */
 
 /* Apply Gujarati font to elements with gujarati class */
 .gujarati-text,
 .lang-gu,
-[lang="gu"] {
-    font-family: 'EKLG-13-BoldItalic', 'Noto Sans Gujarati', sans-serif !important;
+[lang="gu"],
+.question-text.lang-gu,
+.option-text.lang-gu,
+.solution-text.lang-gu,
+textarea.lang-gu,
+input.lang-gu {
+    font-family: 'Noto Sans Gujarati', 'Shruti', 'Lohit Gujarati', sans-serif !important;
+    font-size: 1.15em;
+    line-height: 1.7;
+    font-weight: 500;
 }
 
 /* Fallback for Gujarati script */
 :lang(gu) {
-    font-family: 'EKLG-13-BoldItalic', 'Noto Sans Gujarati', sans-serif;
+    font-family: 'Noto Sans Gujarati', 'Shruti', 'Lohit Gujarati', sans-serif;
+    font-weight: 500;
+}
+
+/* Gujarati preview in forms */
+.gujarati-preview {
+    font-family: 'Noto Sans Gujarati', 'Shruti', 'Lohit Gujarati', sans-serif;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    border: 2px solid #e9ecef;
+    font-weight: 500;
 }
