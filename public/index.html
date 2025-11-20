@@ -23932,7 +23932,7 @@
                                 <label class="form-label" for="editQExamType" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--gray-700); margin-bottom: 0.5rem;">
                                     <i class="fas fa-graduation-cap"></i> Exam Type
                                 </label>
-                                <select id="editQExamType" class="form-select" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem;">
+                                <select id="editQExamType" class="form-select" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--gray-200); border-radius: 8px; font-size: 1rem;" onchange="updateEditChapterOptions(); updatePreview(); saveDraft();">
                                     <option value="jee">JEE</option>
                                     <option value="neet">NEET</option>
                                 </select>
@@ -27317,22 +27317,16 @@
             try {
                 console.log(`📚 Loading chapters for edit form: ${subject} (${examType})...`);
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/chapters', {
+                const response = await fetch(`/api/chapters?examType=${examType}&subject=${subject}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
                 
                 if (data.success && data.chapters) {
-                    // Filter chapters by selected subject and exam type
-                    const filteredChapters = data.chapters.filter(c => 
-                        c.subject.toLowerCase() === subject.toLowerCase() &&
-                        c.examType.toLowerCase() === examType.toLowerCase()
-                    );
-                    
-                    if (filteredChapters.length > 0) {
+                    if (data.chapters.length > 0) {
                         chapterSelect.innerHTML = '<option value="">Select Chapter</option>' + 
-                            filteredChapters.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-                        console.log(`✅ Loaded ${filteredChapters.length} chapters for ${subject}`);
+                            data.chapters.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+                        console.log(`✅ Loaded ${data.chapters.length} chapters for ${subject} (${examType})`);
                     } else {
                         chapterSelect.innerHTML = '<option value="">No chapters available</option>';
                         console.log(`⚠️ No chapters found for ${subject} (${examType})`);
@@ -27663,7 +27657,7 @@
                     const response = await fetch(`/api/chapters/${chapterId}`, {
                         method: 'DELETE',
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('authToken') || 'admin-token'}`,
+                            'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('authToken') || 'admin-token'}`,
                             'Content-Type': 'application/json'
                         }
                     });
@@ -27708,7 +27702,7 @@
                     const response = await fetch(`/api/chapters/clear?examType=${examType}&subject=${subject}`, {
                         method: 'DELETE',
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('authToken') || 'admin-token'}`,
+                            'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('authToken') || 'admin-token'}`,
                             'Content-Type': 'application/json'
                         }
                     });
@@ -27752,7 +27746,7 @@
                     const response = await fetch('/api/admin/chapters/clear-all', {
                         method: 'DELETE',
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('authToken') || 'admin-token'}`,
+                            'Authorization': `Bearer ${localStorage.getItem('token') || localStorage.getItem('authToken') || 'admin-token'}`,
                             'Content-Type': 'application/json'
                         }
                     });
