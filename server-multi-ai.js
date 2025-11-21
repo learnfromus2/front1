@@ -3890,7 +3890,9 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
         const solution = q.solution || q.explanation || '';
         
         html += `<div class="question">`;
-        html += `<div class="question-text"><strong>(${qNum})</strong> ${questionText}</div>`;
+        // Convert \n to <br> for proper line breaks in PDF
+        const formattedQuestionText = questionText.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+        html += `<div class="question-text"><strong>(${qNum})</strong> ${formattedQuestionText}</div>`;
         
         // Question image
         if (q.image || q.questionImage) {
@@ -3904,7 +3906,9 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
             const label = String.fromCharCode(65 + optIndex); // A, B, C, D
             const isCorrect = type === 'solutions' && correctAnswer === label;
             const optClass = isCorrect ? 'option correct-answer' : 'option';
-            html += `<div class="${optClass}"><strong>(${label})</strong> ${opt}</div>`;
+            // Convert \n to <br> for proper line breaks in options
+            const formattedOption = opt.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            html += `<div class="${optClass}"><strong>(${label})</strong> ${formattedOption}</div>`;
           });
           html += `</div>`;
         }
@@ -3913,7 +3917,9 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
         if (type === 'solutions' && solution) {
           html += `<div class="solution">`;
           html += `<span class="solution-label">Solution:(Correct Answer:${correctAnswer})</span><br>`;
-          html += solution;
+          // Convert \n to <br> for proper line breaks in solutions
+          const formattedSolution = solution.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+          html += formattedSolution;
           html += `</div>`;
         }
         

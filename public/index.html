@@ -3468,6 +3468,7 @@
         .preview-solution-text {
             line-height: 1.6;
             color: var(--gray-700);
+            white-space: pre-line;
         }
 
         /* Responsive Edit Modal */
@@ -22779,7 +22780,7 @@
                             </div>
                         </div>
                         
-                        <a href="/Edusphere-mobile.apk" download style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s;">
+                        <a href="https://drive.google.com/uc?export=download&id=11Ch1N5VpxAlFJiA3K0QpADrfj1MbZAJT" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); transition: all 0.3s;">
                             <i class="fab fa-android" style="margin-right: 0.5rem;"></i>
                             Download for Android
                         </a>
@@ -22809,7 +22810,7 @@
                             </div>
                         </div>
                         
-                        <a href="/Edusphere-pc.exe" download style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); transition: all 0.3s;">
+                        <a href="https://drive.google.com/uc?export=download&id=1cKNehJ-sjcKdLOoMdGgUlxsEs9izRpg8" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 1rem 2.5rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); transition: all 0.3s;">
                             <i class="fab fa-windows" style="margin-right: 0.5rem;"></i>
                             Download for Windows
                         </a>
@@ -27871,7 +27872,7 @@
                             return `
                                 <div style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 0.5rem;">
                                     <span style="font-weight: 600; color: #667eea; min-width: 25px;">${optionLabel})</span>
-                                    <span class="tex2jax_process" style="color: #374151;">${formattedOption}</span>
+                                    <span class="tex2jax_process" style="color: #374151; white-space: pre-line;">${formattedOption}</span>
                                 </div>
                             `;
                         }).join('')}
@@ -27885,7 +27886,7 @@
                             <div style="flex: 1; pointer-events: none;">
                                 <div class="question-text-full" style="font-weight: 600; color: #1f2937; margin-bottom: 0.75rem; line-height: 1.6; font-size: 1rem;">
                                     <span style="color: #667eea; margin-right: 0.5rem; font-size: 1.1rem;">Q${index + 1}.</span>
-                                    <span class="tex2jax_process">${formattedText}</span>
+                                    <span class="tex2jax_process" style="white-space: pre-line;">${formattedText}</span>
                                 </div>
                                 ${questionImage ? `<img src="${questionImage}" style="max-width: 400px; height: auto; margin: 0.75rem 0; border-radius: 8px; border: 1px solid #e2e8f0; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">` : ''}
                                 ${optionsHTML}
@@ -28025,7 +28026,7 @@
                             return `
                                 <div style="margin-bottom: 0.5rem; display: flex; align-items: start; gap: 0.5rem;">
                                     <span style="font-weight: 600; color: #667eea; min-width: 25px;">${optionLabel})</span>
-                                    <span class="tex2jax_process" style="color: #374151;">${formattedOption}</span>
+                                    <span class="tex2jax_process" style="color: #374151; white-space: pre-line;">${formattedOption}</span>
                                 </div>
                             `;
                         }).join('')}
@@ -28040,7 +28041,7 @@
                                 <!-- Question Number and Text -->
                                 <div class="question-text-full" style="font-weight: 600; color: #1f2937; margin-bottom: 0.75rem; line-height: 1.6; font-size: 1rem;">
                                     <span style="color: #667eea; margin-right: 0.5rem; font-size: 1.1rem;">Q${index + 1}.</span>
-                                    <span class="tex2jax_process">${formattedText}</span>
+                                    <span class="tex2jax_process" style="white-space: pre-line;">${formattedText}</span>
                                 </div>
                                 
                                 <!-- Question Image -->
@@ -31043,7 +31044,7 @@
                         </div>
                         
                         ${question.solution ? `
-                            <div id="solution-${index}" class="question-solution ${langClass}" ${langAttr} style="display: none; padding: 1rem; background: #d1fae5; border-radius: 8px;">
+                            <div id="solution-${index}" class="question-solution ${langClass}" ${langAttr} style="display: none; padding: 1rem; background: #d1fae5; border-radius: 8px; white-space: pre-line;">
                                 <strong>Solution:</strong> ${cleanTextWithLineBreaks(question.solution)}
                             </div>
                         ` : ''}
@@ -39439,7 +39440,7 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                                 Solution
                             </div>
                             <div class="preview-solution-text">
-                                <div id="preview-solution-math">${solution}</div>
+                                <div id="preview-solution-math">${formatQuestionText(solution)}</div>
                             </div>
                         </div>
                     ` : ''}
@@ -39451,7 +39452,7 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                                 Additional Explanation
                             </div>
                             <div class="preview-solution-text">
-                                <div id="preview-explanation-math">${explanation}</div>
+                                <div id="preview-explanation-math">${formatQuestionText(explanation)}</div>
                             </div>
                         </div>
                     ` : ''}
@@ -46039,8 +46040,8 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                                         <div style="font-weight: bold; color: #2e7d32; margin-bottom: 6px;">
                                             Solution: <span style="color: #d32f2f;">(Correct Answer: ${answer})</span>
                                         </div>
-                                        <div style="margin-top: 6px; line-height: 1.7; text-align: justify; word-wrap: break-word;">
-                                            ${q.solution || q.explanation || 'No solution provided'}
+                                        <div style="margin-top: 6px; line-height: 1.7; text-align: justify; word-wrap: break-word; white-space: pre-line;">
+                                            ${formatQuestionText(q.solution || q.explanation || 'No solution provided')}
                                         </div>
                                     </div>
                                 </div>
