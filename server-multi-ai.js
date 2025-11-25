@@ -4572,6 +4572,11 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
     await initializeDefaultData();
   });
 };
+const path = require("path");
+
+app.get("/google7e9f5c013fb3bb64.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "google7e9f5c013fb3bb64.html"));
+});
 
 // Initialize the server
 initializeServer().catch(console.error);
