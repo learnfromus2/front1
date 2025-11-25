@@ -13,6 +13,8 @@ const { chromium } = require('playwright');
 const fs = require('fs').promises;
 const app = express();
 
+app.use(express.static("public"));
+
 // Find available port
 const findAvailablePort = (startPort) => {
   return new Promise((resolve) => {

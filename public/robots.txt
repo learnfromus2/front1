@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://eduspherebysarvesh.onrender.com/sitemap.xml
