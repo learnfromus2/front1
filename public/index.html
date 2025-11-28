@@ -20,7 +20,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EduSphere Pro | Next-Gen JEE/NEET Platform</title>
-    
+    <meta name='admaven-placement' content=BqjwFqjr7>
     <!-- Device Detection Script - Must run FIRST -->
     <script>
         // Detect device type on first load and store it
@@ -48856,8 +48856,109 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
         title="Keyboard Shortcuts (F1)">
         <i class="fas fa-keyboard"></i>
     </button>
+<!-- AD CONTAINER -->
+<div id="ad-container"></div>
+
+<script>
+// --------------------------
+// YOUR AD KEYS (Adsterra)
+// --------------------------
+const ADSTERRA_KEYS = [
+  "000652761a144742165456cccbd5865a"
+];
+
+// --------------------------
+// REAL URLS MUST BE ADDED HERE
+// --------------------------
+const PROPELLER_URL = "https://example.com/propeller.js";  // replace
+const ADMAVEN_URL    = "https://example.com/admaven.js";   // replace
+const MONETAG_URL    = "https://example.com/monetag.js";   // replace
+const POPADS_URL     = "https://example.com/popads.js";    // replace
+
+// --------------------------
+// CREATE ADS CONTAINER
+// --------------------------
+function ensureAdsBox() {
+  let box = document.getElementById("ads-box");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "ads-box";
+    document.body.prepend(box);
+  }
+  return box;
+}
+
+// --------------------------
+// LOAD ADSTEERRA SCRIPT
+// --------------------------
+function loadAdsterra(key) {
+  const s = document.createElement("script");
+  s.src = `//www.highperformanceformat.com/${key}/invoke.js`;
+  s.async = true;
+  return s;
+}
+
+// --------------------------
+// LOAD ANY JS URL
+// --------------------------
+function loadScript(url) {
+  const s = document.createElement("script");
+  s.src = url;
+  s.async = true;
+  return s;
+}
+
+// --------------------------
+// ROTATE ADS
+// --------------------------
+function refreshAdsNow() {
+  const box = ensureAdsBox();
+  box.innerHTML = "";
+
+  const choice = Math.floor(Math.random() * 4);
+
+  switch (choice) {
+    case 0:
+      ADSTERRA_KEYS.forEach(key => {
+        box.appendChild(loadAdsterra(key));
+      });
+      break;
+
+    case 1:
+      box.appendChild(loadScript(PROPELLER_URL));
+      break;
+
+    case 2:
+      box.appendChild(loadScript(ADMAVEN_URL));
+      break;
+
+    case 3:
+      box.appendChild(loadScript(MONETAG_URL));
+      break;
+  }
+
+  firePopOncePerSession();
+}
+
+// --------------------------
+// POP ADS — ONLY ONCE
+// --------------------------
+function firePopOncePerSession() {
+  if (!sessionStorage.getItem("pop_once")) {
+    document.body.appendChild(loadScript(POPADS_URL));
+    sessionStorage.setItem("pop_once", "1");
+  }
+}
+
+// --------------------------
+// 5-MINUTE AUTO REFRESH
+// --------------------------
+setInterval(refreshAdsNow, 5 * 60 * 1000);
+setTimeout(refreshAdsNow, 2000);
+
+</script>
+
 
 </body>
 
 </html>
-
