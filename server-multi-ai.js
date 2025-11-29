@@ -3622,6 +3622,12 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
         timeout: 30000
       });
 
+      // Wait for fonts to load (especially Gujarati fonts)
+      console.log('⏳ Waiting for fonts to load...');
+      await page.evaluate(() => {
+        return document.fonts.ready;
+      });
+      
       // Wait for MathJax to render
       console.log('⏳ Waiting for MathJax to render LaTeX...');
       await page.waitForTimeout(2000); // Wait 2 seconds for MathJax
@@ -3759,12 +3765,29 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
     
     .gujarati-text,
     .lang-gu,
-    [lang="gu"] {
+    [lang="gu"],
+    .gujarati-text *,
+    .lang-gu *,
+    [lang="gu"] * {
       font-family: 'Noto Sans Gujarati', 'EKLG-13-BoldItalic', sans-serif !important;
     }
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.4; white-space: pre-wrap; padding: 10mm; }
+    
+    /* Ensure Gujarati text renders properly */
+    .question.lang-gu,
+    .question.gujarati-text,
+    .question-text.lang-gu,
+    .question-text.gujarati-text,
+    .option.lang-gu,
+    .option.gujarati-text,
+    .solution.lang-gu,
+    .solution.gujarati-text {
+      font-family: 'Noto Sans Gujarati', 'EKLG-13-BoldItalic', sans-serif !important;
+      font-size: 10pt !important;
+      line-height: 1.6 !important;
+    }
     
     /* Compact Header Design */
     .header { 
@@ -3890,11 +3913,16 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
         const options = q.options || [];
         const correctAnswer = q.answer || q.correctAnswer || '';
         const solution = q.solution || q.explanation || '';
+        const language = q.language || 'en'; // Get language from question
         
-        html += `<div class="question">`;
+        // Detect Gujarati text (contains Gujarati Unicode characters)
+        const isGujarati = language === 'gu' || /[\u0A80-\u0AFF]/.test(questionText);
+        const langClass = isGujarati ? ' lang-gu gujarati-text' : '';
+        
+        html += `<div class="question${langClass}">`;
         // Convert \n to <br> for proper line breaks in PDF
         const formattedQuestionText = questionText.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
-        html += `<div class="question-text"><strong>(${qNum})</strong> ${formattedQuestionText}</div>`;
+        html += `<div class="question-text${langClass}"><strong>(${qNum})</strong> ${formattedQuestionText}</div>`;
         
         // Question image
         if (q.image || q.questionImage) {
@@ -3903,11 +3931,11 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
         
         // Options
         if (options.length > 0) {
-          html += `<div class="options">`;
+          html += `<div class="options${langClass}">`;
           options.forEach((opt, optIndex) => {
             const label = String.fromCharCode(65 + optIndex); // A, B, C, D
             const isCorrect = type === 'solutions' && correctAnswer === label;
-            const optClass = isCorrect ? 'option correct-answer' : 'option';
+            const optClass = isCorrect ? `option correct-answer${langClass}` : `option${langClass}`;
             // Convert \n to <br> for proper line breaks in options
             const formattedOption = opt.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
             html += `<div class="${optClass}"><strong>(${label})</strong> ${formattedOption}</div>`;
@@ -3917,7 +3945,7 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
         
         // Solution (only for solutions type)
         if (type === 'solutions' && solution) {
-          html += `<div class="solution">`;
+          html += `<div class="solution${langClass}">`;
           html += `<span class="solution-label">Solution:(Correct Answer:${correctAnswer})</span><br>`;
           // Convert \n to <br> for proper line breaks in solutions
           const formattedSolution = solution.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
