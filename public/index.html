@@ -48557,7 +48557,36 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
         }
 
     </script>
-   
+   <script type="text/javascript">
+  var adsterraCode = '<script src="//pl28140476.effectivegatecpm.com/4e/a8/d9/4ea8d9a966098b217ad5fc215c6fe864.js"><\/script>';
+
+  function showPopUnder() {
+    var div = document.createElement('div');
+    div.innerHTML = adsterraCode;
+    document.body.appendChild(div);
+  }
+
+  function startAds() {
+    // First ad after user clicks anywhere
+    document.addEventListener('click', function handler() {
+      showPopUnder();
+      document.removeEventListener('click', handler);
+
+      // schedule next ads every 40-50 seconds
+      function scheduleNext() {
+        var delay = Math.floor(Math.random() * (50000 - 40000 + 1)) + 40000; // 40-50s
+        setTimeout(function() {
+          showPopUnder();
+          scheduleNext();
+        }, delay);
+      }
+      scheduleNext();
+    });
+  }
+
+  startAds();
+</script>
+
 
     <!-- File Attachment Modal -->
     <div class="modal" id="fileAttachmentModal" style="display: none;">
