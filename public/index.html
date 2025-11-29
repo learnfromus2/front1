@@ -48557,34 +48557,34 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
         }
 
     </script>
-   <script type="text/javascript">
-  function showPopUnder() {
+<!-- Ad Container -->
+<div id="container-85015781b6376725158ca3c19978225a"></div>
+
+<script type="text/javascript">
+  // Your Adsterra script URL
+  var adUrl = "//pl28140425.effectivegatecpm.com/85015781b6376725158ca3c19978225a/invoke.js";
+
+  function loadAd() {
+    // Clear previous ad
+    var container = document.getElementById('container-85015781b6376725158ca3c19978225a');
+    container.innerHTML = "";
+
+    // Create new script element
     var script = document.createElement('script');
-    script.src = "//pl28140476.effectivegatecpm.com/4e/a8/d9/4ea8d9a966098b217ad5fc215c6fe864.js";
     script.async = true;
-    document.body.appendChild(script);
+    script.src = adUrl;
+
+    // Append script to container
+    container.appendChild(script);
   }
 
-  function startAds() {
-    // First ad triggers after user clicks anywhere
-    document.addEventListener('click', function handler() {
-      showPopUnder(); // first pop-under
-      document.removeEventListener('click', handler);
+  // Load first ad on page load
+  loadAd();
 
-      // schedule next ads every 40-50 seconds
-      function scheduleNext() {
-        var delay = Math.floor(Math.random() * (50000 - 40000 + 1)) + 40000; // 40-50s
-        setTimeout(function() {
-          showPopUnder();
-          scheduleNext();
-        }, delay);
-      }
-      scheduleNext();
-    });
-  }
-
-  startAds();
+  // Refresh ad every 60 seconds (60000ms)
+  setInterval(loadAd, 60000);
 </script>
+
 
 
 
