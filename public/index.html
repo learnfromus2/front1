@@ -48558,32 +48558,24 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
 
     </script>
 <!-- Ad Container -->
-<div id="container-85015781b6376725158ca3c19978225a"></div>
+<div id="banner-container" style="width:468px;height:60px;"></div>
 
 <script type="text/javascript">
-  // Your Adsterra script URL
-  var adUrl = "//pl28140425.effectivegatecpm.com/85015781b6376725158ca3c19978225a/invoke.js";
+  var bannerKey = '000652761a144742165456cccbd5865a';
+  var bannerUrl = '//www.highperformanceformat.com/' + bannerKey + '/invoke.js';
 
-  function loadAd() {
-    // Clear previous ad
-    var container = document.getElementById('container-85015781b6376725158ca3c19978225a');
-    container.innerHTML = "";
-
-    // Create new script element
-    var script = document.createElement('script');
-    script.async = true;
-    script.src = adUrl;
-
-    // Append script to container
-    container.appendChild(script);
+  function loadBanner() {
+    var container = document.getElementById('banner-container');
+    container.innerHTML = '<iframe src="' + bannerUrl + '" width="468" height="60" frameborder="0" scrolling="no"></iframe>';
   }
 
-  // Load first ad on page load
-  loadAd();
+  // Load first banner
+  loadBanner();
 
-  // Refresh ad every 60 seconds (60000ms)
-  setInterval(loadAd, 60000);
+  // Refresh every 60 seconds
+  setInterval(loadBanner, 60000);
 </script>
+
 
 
 
