@@ -48557,20 +48557,35 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
         }
 
     </script>
+<div id="ad-container"></div>
+
 <script>
-function loadAd() {
+function loadAdsterraAd() {
+    const container = document.getElementById("ad-container");
+    container.innerHTML = ""; // remove old ad
+
+    let atOptions = {
+        'key' : '000652761a144742165456cccbd5865a',
+        'format' : 'iframe',
+        'height' : 60,
+        'width' : 468,
+        'params' : {}
+    };
+
     const script = document.createElement("script");
-    script.dataset.zone = "10252977";
-    script.src = "https://groleegni.net/vignette.min.js";
-    document.body.appendChild(script);
+    script.type = "text/javascript";
+    script.src = "//www.highperformanceformat.com/000652761a144742165456cccbd5865a/invoke.js";
+
+    container.appendChild(script);
 }
 
 // Load ad on page load
-loadAd();
+loadAdsterraAd();
 
-// Reload ad every 5 minutes (300,000 ms)
-setInterval(loadAd, 300000);
+// Refresh every 5 minutes (300000 ms)
+setInterval(loadAdsterraAd, 300000);
 </script>
+
 
 
 
