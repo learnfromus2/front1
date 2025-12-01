@@ -48557,7 +48557,20 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
         }
 
     </script>
-<script>(function(s){s.dataset.zone='10252977',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+<script>
+function loadAd() {
+    const script = document.createElement("script");
+    script.dataset.zone = "10252977";
+    script.src = "https://groleegni.net/vignette.min.js";
+    document.body.appendChild(script);
+}
+
+// Load ad on page load
+loadAd();
+
+// Reload ad every 5 minutes (300,000 ms)
+setInterval(loadAd, 300000);
+</script>
 
 
 
