@@ -48931,40 +48931,7 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
 
 
 
-<script>
-(function() {
-
-    // --- Function to load Monetag banner ---
-    function loadMonetagBanner() {
-        // Remove previous banner script if any
-        const old = document.getElementById("monetag-banner-script");
-        if (old) old.remove();
-
-        // Create new Monetag script
-        const s = document.createElement("script");
-        s.id = "monetag-banner-script";
-        s.dataset.zone = "10252977";
-        s.src = "https://groleegni.net/vignette.min.js";
-
-        (document.body || document.documentElement).appendChild(s);
-    }
-
-    // --- Detect SPA route changes (pushState) ---
-    const origPushState = history.pushState;
-    history.pushState = function() {
-        origPushState.apply(history, arguments);
-        loadMonetagBanner();
-    };
-
-    // --- Detect back/forward navigation ---
-    window.addEventListener("popstate", loadMonetagBanner);
-
-    // --- Load ad on first page load ---
-    window.addEventListener("load", loadMonetagBanner);
-
-})();
-</script>
-
+<script>(function(s){s.dataset.zone='10262274',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 
 
 
