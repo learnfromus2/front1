@@ -21774,6 +21774,11 @@
                                             <i class="fas fa-magic"></i>
                                             Create Enhanced Question
                                         </button>
+                                        <button class="btn btn-secondary" onclick="refreshAdminStats()"
+                                            style="background: #6366f1;">
+                                            <i class="fas fa-sync"></i>
+                                            Refresh Stats
+                                        </button>
 
                                     </div>
                                 </div>
@@ -21816,6 +21821,16 @@
                                         <div class="stat-info">
                                             <h3>Mathematics</h3>
                                             <div class="stat-number">713</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="stat-card">
+                                        <div class="stat-icon">
+                                            <i class="fas fa-dna"></i>
+                                        </div>
+                                        <div class="stat-info">
+                                            <h3>Biology</h3>
+                                            <div class="stat-number" id="biologyCount">0</div>
                                         </div>
                                     </div>
                                 </div>
@@ -26968,13 +26983,77 @@
                         // Initialize debug tools
                         initializeAdminPanelWithDebug();
 
-                        // Load admin questions by default
+                        // Load admin questions and stats
                         setTimeout(() => {
                             console.log('📚 Loading admin questions...');
                             loadAdminQuestions();
-                        }, 100);
+                            
+                            // Load admin stats
+                            console.log('� =Loading admin stats...');
+                            fetch(`${API_BASE}/api/admin/stats`, {
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                }
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                console.log('Stats API response:', data);
+                                if (data.success && data.stats) {
+                                    const stats = data.stats;
+                                    console.log('Stats received:', stats);
+                                    console.log('Biology count from API:', stats.biologyCount);
+                                    console.log('All stats keys:', Object.keys(stats));
+                                    
+                                    // Get biology count (try different cases)
+                                    const biologyCount = stats.biologyCount || stats.biologycount || stats.biology || 0;
+                                    console.log('Biology count resolved:', biologyCount);
+                                    
+                                    // Target the questions-tab specifically
+                                    const questionsTab = document.getElementById('questions-tab');
+                                    if (questionsTab) {
+                                        const statCards = questionsTab.querySelectorAll('.admin-stats .stat-number');
+                                        console.log('Found stat-number elements in questions-tab:', statCards.length);
+                                        
+                                        // Update cards in questions tab
+                                        if (statCards.length >= 5) {
+                                            statCards[0].textContent = (stats.totalQuestions || 0).toLocaleString();
+                                            statCards[1].textContent = (stats.physicsCount || 0).toLocaleString();
+                                            statCards[2].textContent = (stats.chemistryCount || 0).toLocaleString();
+                                            statCards[3].textContent = (stats.mathematicsCount || 0).toLocaleString();
+                                            statCards[4].textContent = biologyCount.toLocaleString();
+                                            console.log('All stats updated in questions-tab - Biology:', biologyCount);
+                                        } else {
+                                            console.warn('Not enough stat cards in questions-tab:', statCards.length);
+                                        }
+                                    }
+                                    
+                                    // Also update all other admin-stats sections
+                                    const allStatSections = document.querySelectorAll('.admin-stats');
+                                    console.log('Total admin-stats sections:', allStatSections.length);
+                                    allStatSections.forEach((section, idx) => {
+                                        const cards = section.querySelectorAll('.stat-number');
+                                        console.log(`Section ${idx} has ${cards.length} stat cards`);
+                                        if (cards.length >= 5) {
+                                            cards[0].textContent = (stats.totalQuestions || 0).toLocaleString();
+                                            cards[1].textContent = (stats.physicsCount || 0).toLocaleString();
+                                            cards[2].textContent = (stats.chemistryCount || 0).toLocaleString();
+                                            cards[3].textContent = (stats.mathematicsCount || 0).toLocaleString();
+                                            cards[4].textContent = biologyCount.toLocaleString();
+                                        }
+                                    });
+                                    
+                                    // Direct ID update as fallback
+                                    const biologyEl = document.getElementById('biologyCount');
+                                    if (biologyEl) {
+                                        biologyEl.textContent = biologyCount.toLocaleString();
+                                        console.log('Biology updated via ID to:', biologyCount);
+                                    }
+                                }
+                            })
+                            .catch(err => console.error('Error loading stats:', err));
+                        }, 500);
 
-                        console.log('🔧 ===== ADMIN SECTION LOADED =====');
+                        console.log('ADMIN SECTION LOADED');
                         break;
                     default:
                         console.log('📄 Loading generic section:', sectionId);
@@ -38898,6 +38977,38 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
             container.innerHTML = tableHTML;
         }
 
+        // Refresh Admin Stats Function
+        function refreshAdminStats() {
+            console.log('Refreshing admin stats...');
+            fetch(`${API_BASE}/api/admin/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.stats) {
+                    const stats = data.stats;
+                    console.log('Stats loaded:', stats);
+                    
+                    // Update questions tab stats
+                    const questionsTab = document.getElementById('questions-tab');
+                    if (questionsTab) {
+                        const statCards = questionsTab.querySelectorAll('.stat-number');
+                        if (statCards.length >= 5) {
+                            statCards[0].textContent = (stats.totalQuestions || 0).toLocaleString();
+                            statCards[1].textContent = (stats.physicsCount || 0).toLocaleString();
+                            statCards[2].textContent = (stats.chemistryCount || 0).toLocaleString();
+                            statCards[3].textContent = (stats.mathematicsCount || 0).toLocaleString();
+                            statCards[4].textContent = (stats.biologyCount || 0).toLocaleString();
+                            console.log('Stats updated! Biology:', stats.biologyCount);
+                        }
+                    }
+                }
+            })
+            .catch(err => console.error('Error loading stats:', err));
+        }
+
         // Admin Panel Functions
         function showAdminTab(tabName) {
             console.log('🔧 Switching to admin tab:', tabName);
@@ -38933,6 +39044,8 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                     break;
                 case 'questions':
                     loadQuestionManagement();
+                    // Also load stats for questions tab
+                    refreshAdminStats();
                     break;
                 case 'analytics':
                     loadSystemAnalytics();
@@ -48921,7 +49034,7 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
                     showNotification(data.error || 'Failed to delete document', 'error');
                 }
             } catch (error) {
-                console.error('Error deleting document:', error);
+                console.error('Error deleting document:', error);   
                 showNotification('Error deleting document', 'error');
             }
         }

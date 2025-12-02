@@ -2437,7 +2437,13 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
   app.post('/api/questions', authenticate, async (req, res) => {
     try {
       console.log('📥 Received question data:', JSON.stringify(req.body, null, 2));
-      const { examType, subject, class: classLevel, chapter, difficulty, question, tags, enhanced } = req.body;
+      let { examType, subject, class: classLevel, chapter, difficulty, question, tags, enhanced } = req.body;
+
+      // CRITICAL FIX: Force Biology to NEET, ignore frontend examType
+      if (subject === 'biology') {
+        console.log('🔧 FORCING Biology to NEET (was:', examType, ')');
+        examType = 'neet';
+      }
 
       // Create question data object
       const questionData = {
@@ -2480,16 +2486,19 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
         savedQuestions.push(neetQuestion);
         console.log('✅ NEET question saved:', neetQuestion._id);
       } else {
-        console.log(`📚 Creating ${subject} question for ${examType || 'jee'}`);
+        // For mathematics and biology, use the examType (already corrected above for biology)
+        // Biology is forced to NEET, Mathematics defaults to JEE
+        const finalExamType = examType || 'jee';
+        
+        console.log(`📚 Creating ${subject} question for ${finalExamType}`);
 
-        // For mathematics and biology, use the specified examType or default to JEE
         const singleQuestion = new Question({
           ...questionData,
-          examType: examType || 'jee'
+          examType: finalExamType
         });
         await singleQuestion.save();
         savedQuestions.push(singleQuestion);
-        console.log('✅ Question saved:', singleQuestion._id);
+        console.log('✅ Question saved:', singleQuestion._id, 'with examType:', finalExamType);
       }
 
       // Prepare response message
@@ -2518,7 +2527,7 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
       // Admin panel is now password-protected, allow bulk question addition
       console.log('Bulk adding questions via admin panel');
 
-      const { questions } = req.body;
+      let { questions } = req.body;
 
       if (!questions || !Array.isArray(questions)) {
         return res.status(400).json({
@@ -2526,6 +2535,15 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
           error: 'Questions array is required'
         });
       }
+
+      // CRITICAL FIX: Force Biology questions to NEET
+      questions = questions.map(q => {
+        if (q.subject === 'biology') {
+          console.log('🔧 FORCING Biology question to NEET (was:', q.examType, ')');
+          return { ...q, examType: 'neet' };
+        }
+        return q;
+      });
 
       const result = await Question.insertMany(questions);
 
@@ -2548,7 +2566,13 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
   app.put('/api/questions/:id', authenticate, async (req, res) => {
     try {
       const { id } = req.params;
-      const { examType, subject, class: classLevel, chapter, difficulty, question } = req.body;
+      let { examType, subject, class: classLevel, chapter, difficulty, question } = req.body;
+
+      // Auto-correct examType for Biology - should always be NEET
+      if (subject === 'biology' && (!examType || examType === 'jee')) {
+        console.log('⚠️ Auto-correcting Biology examType from', examType, 'to NEET');
+        examType = 'neet';
+      }
 
       const updatedQuestion = await Question.findByIdAndUpdate(id, {
         examType,
@@ -2608,6 +2632,195 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
       res.status(500).json({
         success: false,
         error: 'Error deleting question'
+      });
+    }
+  });
+
+  // CHECK BIOLOGY QUESTIONS - Diagnostic endpoint
+  app.get('/api/admin/check-biology', authenticate, async (req, res) => {
+    try {
+      console.log('🔍 Checking Biology questions...');
+      
+      // Count all Biology questions
+      const totalBiology = await Question.countDocuments({ subject: 'biology' });
+      const biologyInJEE = await Question.countDocuments({ subject: 'biology', examType: 'jee' });
+      const biologyInNEET = await Question.countDocuments({ subject: 'biology', examType: 'neet' });
+      
+      // Get sample questions
+      const sampleJEE = await Question.find({ subject: 'biology', examType: 'jee' }).limit(5);
+      const sampleNEET = await Question.find({ subject: 'biology', examType: 'neet' }).limit(5);
+
+      console.log(`📊 Biology Questions - Total: ${totalBiology}, JEE: ${biologyInJEE}, NEET: ${biologyInNEET}`);
+
+      res.json({
+        success: true,
+        total: totalBiology,
+        inJEE: biologyInJEE,
+        inNEET: biologyInNEET,
+        sampleJEE: sampleJEE.map(q => ({ id: q._id, text: q.text.substring(0, 50) })),
+        sampleNEET: sampleNEET.map(q => ({ id: q._id, text: q.text.substring(0, 50) })),
+        message: `Found ${totalBiology} Biology questions: ${biologyInJEE} in JEE, ${biologyInNEET} in NEET`
+      });
+    } catch (error) {
+      console.error('❌ Error checking Biology questions:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error checking Biology questions: ' + error.message
+      });
+    }
+  });
+
+  // FIX BIOLOGY QUESTIONS - Migration endpoint to move Biology from JEE to NEET
+  app.post('/api/admin/fix-biology-questions', authenticate, async (req, res) => {
+    try {
+      console.log('🔧 Starting Biology questions migration...');
+      
+      // Find all Biology questions in JEE
+      const biologyInJEE = await Question.find({ 
+        subject: 'biology', 
+        examType: 'jee' 
+      });
+
+      console.log(`📊 Found ${biologyInJEE.length} Biology questions in JEE`);
+
+      if (biologyInJEE.length === 0) {
+        // Check if there are any Biology questions at all
+        const totalBiology = await Question.countDocuments({ subject: 'biology' });
+        const biologyInNEET = await Question.countDocuments({ subject: 'biology', examType: 'neet' });
+        
+        return res.json({
+          success: true,
+          message: `No Biology questions in JEE. Total Biology: ${totalBiology}, Already in NEET: ${biologyInNEET}`,
+          fixed: 0,
+          totalBiology,
+          alreadyInNEET: biologyInNEET
+        });
+      }
+
+      // Update all Biology questions to NEET
+      const result = await Question.updateMany(
+        { subject: 'biology', examType: 'jee' },
+        { $set: { examType: 'neet' } }
+      );
+
+      console.log(`✅ Migrated ${result.modifiedCount} Biology questions from JEE to NEET`);
+
+      res.json({
+        success: true,
+        message: `Successfully migrated ${result.modifiedCount} Biology questions from JEE to NEET`,
+        fixed: result.modifiedCount,
+        found: biologyInJEE.length
+      });
+    } catch (error) {
+      console.error('❌ Error fixing Biology questions:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error fixing Biology questions: ' + error.message
+      });
+    }
+  });
+
+  // FIX BIOLOGY CHAPTERS - Migration endpoint to move Biology chapters from JEE to NEET
+  app.post('/api/admin/fix-biology-chapters', authenticate, async (req, res) => {
+    try {
+      console.log('🔧 Starting Biology chapters migration...');
+      
+      // Find all Biology chapters in JEE
+      const biologyChaptersInJEE = await Chapter.find({ 
+        subject: 'biology', 
+        examType: 'jee' 
+      });
+
+      console.log(`📊 Found ${biologyChaptersInJEE.length} Biology chapters in JEE`);
+
+      if (biologyChaptersInJEE.length === 0) {
+        return res.json({
+          success: true,
+          message: 'No Biology chapters found in JEE. All good!',
+          fixed: 0
+        });
+      }
+
+      // Update all Biology chapters to NEET
+      const result = await Chapter.updateMany(
+        { subject: 'biology', examType: 'jee' },
+        { $set: { examType: 'neet' } }
+      );
+
+      console.log(`✅ Migrated ${result.modifiedCount} Biology chapters from JEE to NEET`);
+
+      res.json({
+        success: true,
+        message: `Successfully migrated ${result.modifiedCount} Biology chapters from JEE to NEET`,
+        fixed: result.modifiedCount,
+        found: biologyChaptersInJEE.length
+      });
+    } catch (error) {
+      console.error('❌ Error fixing Biology chapters:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error fixing Biology chapters: ' + error.message
+      });
+    }
+  });
+
+  // CREATE DEFAULT BIOLOGY CHAPTERS - Helper endpoint
+  app.post('/api/admin/create-biology-chapters', authenticate, async (req, res) => {
+    try {
+      console.log('📚 Creating default Biology chapters for NEET...');
+      
+      const defaultBiologyChapters = [
+        { name: 'Cell Biology', icon: 'fa-microscope', order: 1 },
+        { name: 'Genetics', icon: 'fa-dna', order: 2 },
+        { name: 'Evolution', icon: 'fa-tree', order: 3 },
+        { name: 'Human Physiology', icon: 'fa-heartbeat', order: 4 },
+        { name: 'Plant Physiology', icon: 'fa-leaf', order: 5 },
+        { name: 'Ecology', icon: 'fa-globe', order: 6 },
+        { name: 'Biotechnology', icon: 'fa-flask', order: 7 },
+        { name: 'Reproduction', icon: 'fa-seedling', order: 8 },
+        { name: 'Molecular Biology', icon: 'fa-atom', order: 9 },
+        { name: 'Diversity of Living Organisms', icon: 'fa-paw', order: 10 }
+      ];
+
+      const createdChapters = [];
+      
+      for (const chapterData of defaultBiologyChapters) {
+        // Check if chapter already exists
+        const existing = await Chapter.findOne({
+          examType: 'neet',
+          subject: 'biology',
+          name: chapterData.name
+        });
+
+        if (!existing) {
+          const newChapter = new Chapter({
+            examType: 'neet',
+            subject: 'biology',
+            name: chapterData.name,
+            description: `${chapterData.name} for NEET`,
+            icon: chapterData.icon,
+            order: chapterData.order,
+            isActive: true
+          });
+          await newChapter.save();
+          createdChapters.push(newChapter);
+          console.log(`✅ Created chapter: ${chapterData.name}`);
+        } else {
+          console.log(`ℹ️ Chapter already exists: ${chapterData.name}`);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Created ${createdChapters.length} Biology chapters for NEET`,
+        created: createdChapters.length,
+        chapters: createdChapters
+      });
+    } catch (error) {
+      console.error('❌ Error creating Biology chapters:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error creating Biology chapters: ' + error.message
       });
     }
   });
@@ -3053,8 +3266,14 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
   // Get all chapters for a specific exam type and subject
   app.get('/api/chapters', async (req, res) => {
     try {
-      const { examType, subject } = req.query;
+      let { examType, subject } = req.query;
       let query = { isActive: true };
+
+      // CRITICAL FIX: Force Biology to use NEET examType
+      if (subject === 'biology') {
+        console.log('🔧 Biology chapters requested - forcing examType to NEET (was:', examType, ')');
+        examType = 'neet';
+      }
 
       // For Physics and Chemistry, share chapters between JEE and NEET
       if (subject === 'physics' || subject === 'chemistry') {
@@ -3070,6 +3289,11 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
       }
 
       const chapters = await Chapter.find(query).sort({ order: 1, name: 1 });
+
+      console.log(`📚 Found ${chapters.length} chapters for ${subject} (${examType})`);
+      if (chapters.length === 0 && subject === 'biology') {
+        console.log('⚠️ No Biology chapters found! You may need to create them first.');
+      }
 
       // Remove duplicates by name (in case same chapter exists for both JEE and NEET)
       const uniqueChapters = [];
@@ -3098,7 +3322,13 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
   // Add new chapter
   app.post('/api/chapters', authenticate, async (req, res) => {
     try {
-      const { examType, subject, name, description, icon, order } = req.body;
+      let { examType, subject, name, description, icon, order } = req.body;
+
+      // Auto-correct examType for Biology - should always be NEET
+      if (subject === 'biology' && (!examType || examType === 'jee')) {
+        console.log('⚠️ Auto-correcting Biology examType from', examType, 'to NEET');
+        examType = 'neet';
+      }
 
       if (!examType || !subject || !name) {
         return res.status(400).json({
@@ -4124,6 +4354,20 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
       const totalQuestions = await Question.countDocuments();
       const totalTests = await Test.countDocuments();
 
+      // Subject-wise question counts
+      const physicsCount = await Question.countDocuments({ subject: 'physics' });
+      const chemistryCount = await Question.countDocuments({ subject: 'chemistry' });
+      const mathematicsCount = await Question.countDocuments({ subject: 'mathematics' });
+      const biologyCount = await Question.countDocuments({ subject: 'biology' });
+
+      console.log('📊 Question counts by subject:', {
+        physics: physicsCount,
+        chemistry: chemistryCount,
+        mathematics: mathematicsCount,
+        biology: biologyCount,
+        total: totalQuestions
+      });
+
       res.json({
         success: true,
         stats: {
@@ -4132,7 +4376,12 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
           totalTeachers,
           totalAdmins,
           totalQuestions,
-          totalTests
+          totalTests,
+          // Subject-wise counts
+          physicsCount,
+          chemistryCount,
+          mathematicsCount,
+          biologyCount
         }
       });
     } catch (error) {
