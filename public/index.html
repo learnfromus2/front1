@@ -27006,6 +27006,375 @@
             }
         }
 
+        // ==================== SPA ROUTING SYSTEM ====================
+        /*
+         * 🧭 Single Page Application (SPA) Routing System
+         * 
+         * Features:
+         * - Clean URLs with hash routing (e.g., #/dashboard, #/question-bank)
+         * - Browser back/forward button support
+         * - Automatic URL sync when sections change
+         * - Programmatic navigation with navigateTo()
+         * 
+         * Usage:
+         * - navigateTo('/dashboard') - Navigate to dashboard
+         * - navigateTo('/question-bank') - Navigate to question bank
+         * - Browser back/forward buttons work automatically
+         * 
+         * Available Routes:
+         * - / or /dashboard - Main dashboard
+         * - /question-bank - Question bank section
+         * - /create-test - Create test section
+         * - /make-paper - Make paper section
+         * - /ai-guidance - AI guidance chat
+         * - /ultra-ai-guidance - Ultra AI guidance
+         * - /documents - Documents section
+         * - /performance - Performance analytics
+         * - /admin - Admin panel
+         * - And more... (see routes object below)
+         */
+        
+        // Route configuration - maps URL paths to section IDs
+        const routes = {
+            // Main Routes
+            '/': 'dashboardSection',
+            '/home': 'dashboardSection',
+            '/dashboard': 'dashboardSection',
+            '/main': 'dashboardSection',
+            
+            // Question Bank Routes
+            '/question-bank': 'questionBankSection',
+            '/questions': 'questionBankSection',
+            '/qbank': 'questionBankSection',
+            '/browse-questions': 'questionBankSection',
+            '/question-library': 'questionBankSection',
+            
+            // Test Creation Routes
+            '/create-test': 'createTestSection',
+            '/new-test': 'createTestSection',
+            '/test-builder': 'createTestSection',
+            '/build-test': 'createTestSection',
+            '/make-test': 'createTestSection',
+            
+            // Paper Creation Routes
+            '/make-paper': 'makePaperSection',
+            '/create-paper': 'makePaperSection',
+            '/paper-builder': 'makePaperSection',
+            '/new-paper': 'makePaperSection',
+            '/exam-paper': 'makePaperSection',
+            '/paper-generator': 'makePaperSection',
+            
+            // Paper Settings Routes
+            '/paper-settings': 'paperSettingsSection',
+            '/configure-paper': 'paperSettingsSection',
+            '/paper-config': 'paperSettingsSection',
+            '/paper-options': 'paperSettingsSection',
+            
+            // My Papers Routes
+            '/my-papers': 'myPapersSection',
+            '/saved-papers': 'myPapersSection',
+            '/papers': 'myPapersSection',
+            '/paper-history': 'myPapersSection',
+            '/generated-papers': 'myPapersSection',
+            
+            // Practice Test Routes
+            '/create-practice-test': 'createPracticeTestSection',
+            '/practice-builder': 'createPracticeTestSection',
+            '/new-practice': 'createPracticeTestSection',
+            '/practice-test': 'practiceTestSection',
+            '/practice': 'practiceTestSection',
+            '/practice-mode': 'practiceTestSection',
+            '/practice-exam': 'practiceTestSection',
+            
+            // Custom Test Routes
+            '/create-custom-test': 'createCustomTestSection',
+            '/custom-test': 'createCustomTestSection',
+            '/custom-test-builder': 'createCustomTestSection',
+            '/personalized-test': 'createCustomTestSection',
+            
+            // AI Guidance Routes
+            '/ai-guidance': 'aiGuidanceSection',
+            '/ai-chat': 'aiGuidanceSection',
+            '/ai-help': 'aiGuidanceSection',
+            '/ask-ai': 'aiGuidanceSection',
+            '/ai-tutor': 'aiGuidanceSection',
+            '/chatbot': 'aiGuidanceSection',
+            '/ultra-ai-guidance': 'ultraAiGuidanceSection',
+            '/ultra-ai': 'ultraAiGuidanceSection',
+            '/advanced-ai': 'ultraAiGuidanceSection',
+            '/ai-assistant': 'ultraAiGuidanceSection',
+            
+            // Documents Routes
+            '/documents': 'documentsSection',
+            '/docs': 'documentsSection',
+            '/study-materials': 'documentsSection',
+            '/resources': 'documentsSection',
+            '/materials': 'documentsSection',
+            '/notes': 'documentsSection',
+            '/document-viewer': 'documentViewerPage',
+            '/view-document': 'documentViewerPage',
+            '/doc-viewer': 'documentViewerPage',
+            '/pdf-viewer': 'documentViewerPage',
+            
+            // Performance Routes
+            '/performance': 'performanceSection',
+            '/analytics': 'performanceSection',
+            '/stats': 'performanceSection',
+            '/my-performance': 'performanceSection',
+            '/progress': 'performanceSection',
+            '/results': 'performanceSection',
+            '/scores': 'performanceSection',
+            '/all-performance': 'allPerformanceSection',
+            '/class-performance': 'allPerformanceSection',
+            '/student-performance': 'allPerformanceSection',
+            '/leaderboard': 'allPerformanceSection',
+            
+            // Mock Test Routes
+            '/mock-test': 'mockTestInterfaceSection',
+            '/mock-exam': 'mockTestInterfaceSection',
+            '/full-test': 'mockTestInterfaceSection',
+            '/simulation': 'mockTestInterfaceSection',
+            '/test-series': 'mockTestInterfaceSection',
+            
+            // Start Test Routes - Generic
+            '/start-test': 'practiceTestSection',
+            '/begin-test': 'practiceTestSection',
+            '/take-test': 'practiceTestSection',
+            '/test-now': 'practiceTestSection',
+            '/start-exam': 'practiceTestSection',
+            '/begin-exam': 'practiceTestSection',
+            
+            // Start Mock Test Routes
+            '/start-mock-test': 'mockTestInterfaceSection',
+            '/start-mock': 'mockTestInterfaceSection',
+            '/begin-mock-test': 'mockTestInterfaceSection',
+            '/take-mock-test': 'mockTestInterfaceSection',
+            '/mock-test-start': 'mockTestInterfaceSection',
+            '/start-full-test': 'mockTestInterfaceSection',
+            
+            // JEE Test Routes
+            '/start-jee-test': 'mockTestInterfaceSection',
+            '/jee-mock-test': 'mockTestInterfaceSection',
+            '/jee-test': 'mockTestInterfaceSection',
+            '/jee-practice': 'practiceTestSection',
+            '/jee-exam': 'mockTestInterfaceSection',
+            '/jee-simulation': 'mockTestInterfaceSection',
+            '/start-jee-mock': 'mockTestInterfaceSection',
+            '/take-jee-test': 'mockTestInterfaceSection',
+            
+            // NEET Test Routes
+            '/start-neet-test': 'mockTestInterfaceSection',
+            '/neet-mock-test': 'mockTestInterfaceSection',
+            '/neet-test': 'mockTestInterfaceSection',
+            '/neet-practice': 'practiceTestSection',
+            '/neet-exam': 'mockTestInterfaceSection',
+            '/neet-simulation': 'mockTestInterfaceSection',
+            '/start-neet-mock': 'mockTestInterfaceSection',
+            '/take-neet-test': 'mockTestInterfaceSection',
+            
+            // Subject-wise Test Routes - Physics
+            '/start-physics-test': 'practiceTestSection',
+            '/physics-test': 'practiceTestSection',
+            '/physics-practice': 'practiceTestSection',
+            '/physics-mock': 'mockTestInterfaceSection',
+            '/test-physics': 'practiceTestSection',
+            
+            // Subject-wise Test Routes - Chemistry
+            '/start-chemistry-test': 'practiceTestSection',
+            '/chemistry-test': 'practiceTestSection',
+            '/chemistry-practice': 'practiceTestSection',
+            '/chemistry-mock': 'mockTestInterfaceSection',
+            '/test-chemistry': 'practiceTestSection',
+            
+            // Subject-wise Test Routes - Mathematics
+            '/start-math-test': 'practiceTestSection',
+            '/math-test': 'practiceTestSection',
+            '/mathematics-test': 'practiceTestSection',
+            '/math-practice': 'practiceTestSection',
+            '/math-mock': 'mockTestInterfaceSection',
+            '/test-math': 'practiceTestSection',
+            
+            // Subject-wise Test Routes - Biology
+            '/start-biology-test': 'practiceTestSection',
+            '/biology-test': 'practiceTestSection',
+            '/biology-practice': 'practiceTestSection',
+            '/biology-mock': 'mockTestInterfaceSection',
+            '/test-biology': 'practiceTestSection',
+            
+            // Difficulty-based Test Routes
+            '/start-easy-test': 'practiceTestSection',
+            '/easy-test': 'practiceTestSection',
+            '/beginner-test': 'practiceTestSection',
+            '/start-medium-test': 'practiceTestSection',
+            '/medium-test': 'practiceTestSection',
+            '/intermediate-test': 'practiceTestSection',
+            '/start-hard-test': 'practiceTestSection',
+            '/hard-test': 'practiceTestSection',
+            '/advanced-test': 'practiceTestSection',
+            '/expert-test': 'practiceTestSection',
+            
+            // Quick Test Routes
+            '/quick-test': 'practiceTestSection',
+            '/quick-practice': 'practiceTestSection',
+            '/rapid-test': 'practiceTestSection',
+            '/speed-test': 'practiceTestSection',
+            '/timed-test': 'practiceTestSection',
+            '/5-min-test': 'practiceTestSection',
+            '/10-min-test': 'practiceTestSection',
+            '/15-min-test': 'practiceTestSection',
+            '/30-min-test': 'practiceTestSection',
+            
+            // Chapter-wise Test Routes
+            '/chapter-test': 'practiceTestSection',
+            '/chapter-practice': 'practiceTestSection',
+            '/topic-test': 'practiceTestSection',
+            '/topic-practice': 'practiceTestSection',
+            '/unit-test': 'practiceTestSection',
+            
+            // Admin Routes
+            '/admin': 'adminSection',
+            '/admin-panel': 'adminSection',
+            '/management': 'adminSection',
+            '/control-panel': 'adminSection',
+            '/settings': 'adminSection',
+            
+            // App Download Routes
+            '/download-app': 'downloadAppSection',
+            '/download': 'downloadAppSection',
+            '/get-app': 'downloadAppSection',
+            '/mobile-app': 'downloadAppSection',
+            '/install': 'downloadAppSection'
+        };
+
+        // Reverse mapping - section ID to URL path
+        const sectionToRoute = {};
+        Object.keys(routes).forEach(path => {
+            const sectionId = routes[path];
+            if (!sectionToRoute[sectionId]) {
+                sectionToRoute[sectionId] = path;
+            }
+        });
+
+        // Navigate to a route (updates URL and shows section)
+        function navigateTo(path, addToHistory = true) {
+            console.log('🧭 Navigating to:', path);
+            
+            const sectionId = routes[path];
+            if (!sectionId) {
+                console.warn('⚠️ Route not found:', path);
+                // Fallback to dashboard
+                navigateTo('/dashboard', addToHistory);
+                return;
+            }
+
+            // Update URL without page reload
+            if (addToHistory) {
+                const url = window.location.origin + window.location.pathname + '#' + path;
+                history.pushState({ path, sectionId }, '', url);
+                console.log('📍 URL updated to:', url);
+            }
+
+            // Show the section
+            showSection(sectionId);
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', (event) => {
+            console.log('⬅️ Browser back/forward button pressed');
+            if (event.state && event.state.path) {
+                navigateTo(event.state.path, false);
+            } else {
+                // Parse hash from URL
+                const hash = window.location.hash.slice(1) || '/';
+                navigateTo(hash, false);
+            }
+        });
+
+        // Enhanced showSection with routing support
+        const originalShowSectionForRouting = showSection;
+        showSection = function(sectionId) {
+            console.log('🔄 showSection called with:', sectionId);
+            
+            // Call original function
+            originalShowSectionForRouting(sectionId);
+            
+            // Update URL to match section
+            const path = sectionToRoute[sectionId] || '/dashboard';
+            const currentHash = window.location.hash.slice(1);
+            
+            // Only update URL if it's different
+            if (currentHash !== path) {
+                const url = window.location.origin + window.location.pathname + '#' + path;
+                history.replaceState({ path, sectionId }, '', url);
+                console.log('📍 URL synced to:', url);
+            }
+        };
+
+        // Initialize routing on page load
+        function initializeRouting() {
+            console.log('🚀 Initializing SPA routing...');
+            
+            // Check if user is logged in
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('🔒 No token found, showing auth section');
+                return;
+            }
+
+            // Parse initial route from URL hash
+            const hash = window.location.hash.slice(1) || '/';
+            console.log('📍 Initial route from URL:', hash);
+            
+            // Navigate to initial route
+            if (routes[hash]) {
+                navigateTo(hash, false);
+            } else {
+                // Invalid route, go to dashboard
+                navigateTo('/dashboard', false);
+            }
+        }
+
+        // Update all navigation buttons to use routing
+        function updateNavigationWithRouting() {
+            console.log('🔗 Updating navigation buttons with routing...');
+            
+            // Update sidebar navigation
+            document.querySelectorAll('[data-section]').forEach(button => {
+                const sectionId = button.getAttribute('data-section');
+                const path = sectionToRoute[sectionId];
+                
+                if (path) {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        navigateTo(path);
+                    });
+                }
+            });
+
+            // Note: Inline onclick handlers will still work through enhanced showSection
+            // which automatically updates URLs
+        }
+
+        // Call after DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNavigationWithRouting();
+        });
+
+        // Expose navigation function globally for easy access
+        window.navigateTo = navigateTo;
+        window.routes = routes;
+
+        // Console helper for developers
+        console.log('🧭 SPA Routing System Loaded!');
+        console.log(`📍 Total Routes: ${Object.keys(routes).length}`);
+        console.log('📍 Available routes:', Object.keys(routes));
+        console.log('💡 Use navigateTo("/route-name") to navigate programmatically');
+        console.log('💡 Example: navigateTo("/question-bank")');
+        console.log('💡 Example: navigateTo("/ai-chat")');
+        console.log('💡 Example: navigateTo("/practice-test")');
+
+        // ==================== END SPA ROUTING SYSTEM ====================
+
         // Show dashboard
         function showDashboard() {
             console.log('🏠 Showing dashboard...');
@@ -27038,10 +27407,11 @@
                 userAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
             }
 
+            // Initialize SPA routing
+            initializeRouting();
 
-
-            // Show the dashboard section specifically
-            showSection('dashboardSection');
+            // Show the dashboard section specifically (routing will handle URL)
+            // showSection('dashboardSection'); // Commented out - routing handles this
         }
 
 
@@ -48561,7 +48931,40 @@ Format the response as a JSON array of question objects. Use proper LaTeX syntax
 
 
 
-<script>(function(s){s.dataset.zone='10252977',s.src='https://groleegni.net/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+<script>
+(function() {
+
+    // --- Function to load Monetag banner ---
+    function loadMonetagBanner() {
+        // Remove previous banner script if any
+        const old = document.getElementById("monetag-banner-script");
+        if (old) old.remove();
+
+        // Create new Monetag script
+        const s = document.createElement("script");
+        s.id = "monetag-banner-script";
+        s.dataset.zone = "10252977";
+        s.src = "https://groleegni.net/vignette.min.js";
+
+        (document.body || document.documentElement).appendChild(s);
+    }
+
+    // --- Detect SPA route changes (pushState) ---
+    const origPushState = history.pushState;
+    history.pushState = function() {
+        origPushState.apply(history, arguments);
+        loadMonetagBanner();
+    };
+
+    // --- Detect back/forward navigation ---
+    window.addEventListener("popstate", loadMonetagBanner);
+
+    // --- Load ad on first page load ---
+    window.addEventListener("load", loadMonetagBanner);
+
+})();
+</script>
+
 
 
 
