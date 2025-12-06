@@ -4017,7 +4017,19 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
     }
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; font-size: 9pt; line-height: 1.4; white-space: pre-wrap; padding: 10mm; }
+    
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    
+    body { 
+      font-family: Arial, sans-serif; 
+      font-size: 9pt; 
+      line-height: 1.4; 
+      white-space: pre-wrap; 
+      padding: 5mm 5mm 10mm 5mm; /* top right bottom left - reduced top and sides */
+    }
     
     /* Ensure Gujarati text renders properly */
     .question.lang-gu,
@@ -4092,9 +4104,52 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
     .two-column { column-count: 2; column-gap: 15px; column-rule: 1px solid #ddd; }
     .question { margin: 8px 0; page-break-inside: avoid; break-inside: avoid; font-size: 9.5pt; }
     .question-text { margin-bottom: 5px; line-height: 1.5; white-space: pre-wrap; }
-    .options { margin-left: 15px; margin-top: 3px; }
-    .option { margin: 3px 0; white-space: pre-wrap; }
-    .solution { margin: 8px 0 8px 15px; color: #1976d2; font-style: italic; font-size: 9pt; white-space: pre-wrap; line-height: 1.5; }
+    
+    /* Smart options layout - inline for short options, block for long ones */
+    .options { 
+      margin-top: 3px; 
+      padding-left: 0;
+    }
+    
+    /* Inline options for short text */
+    .options.inline { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 15px;
+      margin-left: 15px;
+    }
+    
+    .options.inline .option { 
+      display: inline-block; 
+      margin: 3px 0; 
+      white-space: nowrap;
+      padding-left: 0;
+    }
+    
+    /* Block options for long text */
+    .options.block {
+      margin-left: 15px;
+    }
+    
+    .options.block .option { 
+      display: block; 
+      margin: 3px 0; 
+      white-space: pre-wrap;
+      padding-left: 0;
+    }
+    
+    .option { 
+      white-space: pre-wrap; 
+    }
+    
+    .solution { 
+      margin: 8px 0 8px 15px; 
+      color: #1976d2; 
+      font-style: italic; 
+      font-size: 9pt; 
+      white-space: pre-wrap; 
+      line-height: 1.5; 
+    }
     .solution-label { font-weight: bold; color: #000; }
     .correct-answer { color: #4caf50; font-weight: bold; }
     .answer-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
@@ -4173,16 +4228,24 @@ CONVERSATION CONTEXT: Maintain continuity and build upon previous discussions to
           html += `<img src="${q.image || q.questionImage}" alt="Question ${qNum}" style="max-width: 250px; max-height: 200px; height: auto; margin: 5px 0;">`;
         }
         
-        // Options
+        // Options - Smart layout (inline for short, block for long)
         if (options.length > 0) {
-          html += `<div class="options${langClass}">`;
+          // Calculate average option length to decide layout
+          const avgLength = options.reduce((sum, opt) => sum + opt.length, 0) / options.length;
+          const maxLength = Math.max(...options.map(opt => opt.length));
+          
+          // Use inline layout if all options are short (avg < 20 chars and max < 40 chars)
+          const useInlineLayout = avgLength < 20 && maxLength < 40;
+          const layoutClass = useInlineLayout ? 'inline' : 'block';
+          
+          html += `<div class="options ${layoutClass}${langClass}">`;
           options.forEach((opt, optIndex) => {
             const label = String.fromCharCode(65 + optIndex); // A, B, C, D
             const isCorrect = type === 'solutions' && correctAnswer === label;
             const optClass = isCorrect ? `option correct-answer${langClass}` : `option${langClass}`;
             // Convert \n to <br> for proper line breaks in options
             const formattedOption = opt.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
-            html += `<div class="${optClass}"><strong>(${label})</strong> ${formattedOption}</div>`;
+            html += `<div class="${optClass}"><strong>${label})</strong> ${formattedOption}</div>`;
           });
           html += `</div>`;
         }
