@@ -1264,7 +1264,10 @@ const initializeServer = async () => {
 
   // User authentication
   app.post('/api/auth/login', async (req, res) => {
-    const { username, password, role } = req.body;
+    let { username, password, role } = req.body;
+
+    // Trim whitespace from username to handle spaces
+    username = username ? username.trim() : username;
 
     console.log('🔐 Login attempt:', { username, role });
 
@@ -1276,7 +1279,10 @@ const initializeServer = async () => {
     }
 
     try {
-      const user = await User.findOne({ username });
+      // Case-insensitive search with trimmed username
+      const user = await User.findOne({ 
+        username: { $regex: new RegExp(`^${username}$`, 'i') }
+      });
       console.log('👤 User found:', { found: !!user, userRole: user?.role, requestedRole: role });
 
       if (user) {
@@ -1325,7 +1331,11 @@ const initializeServer = async () => {
 
   // User registration
   app.post('/api/auth/register', async (req, res) => {
-    const { username, password, email, role } = req.body;
+    let { username, password, email, role } = req.body;
+
+    // Trim whitespace from username and email
+    username = username ? username.trim() : username;
+    email = email ? email.trim().toLowerCase() : email;
 
     console.log('📝 Registration attempt:', { username, email, role });
 
@@ -1363,8 +1373,10 @@ const initializeServer = async () => {
     }
 
     try {
-      // Check if username already exists
-      const existingUser = await User.findOne({ username });
+      // Check if username already exists (case-insensitive)
+      const existingUser = await User.findOne({ 
+        username: { $regex: new RegExp(`^${username}$`, 'i') }
+      });
       if (existingUser) {
         return res.status(409).json({
           success: false,
@@ -1372,8 +1384,10 @@ const initializeServer = async () => {
         });
       }
 
-      // Check if email already exists
-      const existingEmail = await User.findOne({ email });
+      // Check if email already exists (case-insensitive)
+      const existingEmail = await User.findOne({ 
+        email: { $regex: new RegExp(`^${email}$`, 'i') }
+      });
       if (existingEmail) {
         return res.status(409).json({
           success: false,
